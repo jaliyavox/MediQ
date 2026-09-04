@@ -14,7 +14,14 @@ function configureDns() {
 
 async function connectDatabase() {
   if (!process.env.MONGO_URI) {
-    throw new Error('MONGO_URI is missing. Run npm run setup, then fill in backend/.env.');
+    // On a host there is no .env file - the value comes from the service's
+    // environment settings - so point at the right place depending on where
+    // this is running.
+    throw new Error(
+      process.env.RENDER
+        ? 'MONGO_URI is missing. Set it under Environment on the Render service, then redeploy.'
+        : 'MONGO_URI is missing. Run npm run setup, then fill in backend/.env.'
+    );
   }
 
   configureDns();
