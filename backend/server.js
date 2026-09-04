@@ -1,17 +1,11 @@
 // LOCKED FILE - tell the team before changing this.
 require('dotenv').config();
-const mongoose = require('mongoose');
 const app = require('./app');
+const { connectDatabase } = require('./config/database');
 
 const PORT = process.env.PORT || 5001;
 
-if (!process.env.MONGO_URI) {
-  console.error('MONGO_URI is missing. Copy .env.example to .env and fill it in.');
-  process.exit(1);
-}
-
-mongoose
-  .connect(process.env.MONGO_URI)
+connectDatabase()
   .then(() => {
     console.log('MongoDB connected');
     app.listen(PORT, () => console.log(`API running on http://localhost:${PORT}`));

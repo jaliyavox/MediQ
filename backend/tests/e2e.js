@@ -4,7 +4,9 @@
 process.env.JWT_SECRET = 'e2e-secret';
 const { MongoMemoryServer } = require('mongodb-memory-server');
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 const app = require('../app');
+const Admin = require('../models/Admin');
 
 let pass = 0, fail = 0;
 const check = (name, ok, detail = '') => {
@@ -130,6 +132,51 @@ const check = (name, ok, detail = '') => {
 
   r = await req('GET', '/reviews/mine', null, docToken);
   check('provider can read their own reviews', r.status === 200 && r.data.length === 3);
+
+  // --- separate admin authentication + moderation ---
+  await Admin.create({
+    name: 'Test Admin',
+    email: 'admin@test.demo',
+    passwordHash: await bcrypt.hash('admin1234', 4),
+  });
+
+  r = await req('POST', '/admin/login', { email: 'admin@test.demo', password: 'wrongpass' });
+  check('admin rejects wrong password', r.status === 401);
+
+  r = await req('POST', '/admin/login', { email: 'admin@test.demo', password: 'admin1234' });
+  const adminToken = r.data.token;
+  check('admin login returns scoped token', r.status === 200 && typeof adminToken === 'string');
+  check('admin response never leaks passwordHash', r.data.admin.passwordHash === undefined);
+
+  r = await req('GET', '/admin/providers', null, docToken);
+  check('provider token cannot access admin API', r.status === 401);
+
+  r = await req('GET', '/admin/providers', null, adminToken);
+  check('admin can list doctors and pharmacies', r.status === 200 && r.data.length === 2);
+
+  r = await req('GET', '/admin/reviews', null, adminToken);
+  check('admin sees reviews with their provider',
+        r.status === 200 && r.data.length === 3 && r.data[0].providerId.name === 'Dr. Test Perera');
+  const reviewId = r.data[0]._id;
+
+  r = await req('PATCH', `/admin/providers/${docId}/ban`,
+    { banned: true, reason: 'Test suspension' }, adminToken);
+  check('admin can suspend a provider', r.status === 200 && r.data.isBanned === true);
+  check('suspended provider disappears from directory',
+        (await req('GET', `/providers/${docId}`)).status === 404);
+  check('suspended provider session is blocked',
+        (await req('GET', '/auth/me', null, docToken)).status === 403);
+  check('suspended provider cannot receive new reviews',
+        (await req('POST', `/providers/${docId}/reviews`,
+          { patientName: 'P', rating: 5, comment: 'blocked' })).status === 404);
+
+  r = await req('PATCH', `/admin/providers/${docId}/ban`, { banned: false }, adminToken);
+  check('admin can restore a provider', r.status === 200 && r.data.isBanned === false);
+
+  r = await req('DELETE', `/admin/reviews/${reviewId}`, null, adminToken);
+  check('admin can remove a review', r.status === 200);
+  r = await req('GET', `/providers/${docId}`);
+  check('rating count recalculates after moderation', r.data.reviewCount === 2);
 
   console.log(`\n${pass} passed, ${fail} failed`);
   await mongoose.disconnect(); await mem.stop(); server.close();

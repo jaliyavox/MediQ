@@ -4,7 +4,11 @@ const Provider = require('../models/Provider');
 // POST /api/providers/:id/reviews   (public)
 exports.addReview = async (req, res, next) => {
   try {
-    const provider = await Provider.findById(req.params.id);
+    const provider = await Provider.findOne({
+      _id: req.params.id,
+      status: 'approved',
+      isBanned: { $ne: true },
+    });
     if (!provider) return res.status(404).json({ message: 'That listing no longer exists.' });
 
     const review = await Review.create({

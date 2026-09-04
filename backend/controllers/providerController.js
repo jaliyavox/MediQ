@@ -33,7 +33,7 @@ async function withRatings(providers) {
 exports.listProviders = async (req, res, next) => {
   try {
     const { role, area, district, specialization, q } = req.query;
-    const filter = { status: 'approved' };
+    const filter = { status: 'approved', isBanned: { $ne: true } };
 
     if (role) filter.role = role;
     if (area) filter.area = new RegExp(`^${escapeRegex(area)}$`, 'i');
@@ -56,7 +56,11 @@ exports.getProvider = async (req, res, next) => {
     if (!mongoose.isValidObjectId(req.params.id)) {
       return res.status(404).json({ message: 'Not found.' });
     }
-    const provider = await Provider.findById(req.params.id);
+    const provider = await Provider.findOne({
+      _id: req.params.id,
+      status: 'approved',
+      isBanned: { $ne: true },
+    });
     if (!provider) return res.status(404).json({ message: 'Not found.' });
 
     const [withRating] = await withRatings([provider]);
@@ -70,8 +74,10 @@ exports.getProvider = async (req, res, next) => {
 exports.getFilterOptions = async (req, res, next) => {
   try {
     const [areas, specializations] = await Promise.all([
-      Provider.distinct('area', { status: 'approved' }),
-      Provider.distinct('specialization', { role: 'doctor', status: 'approved' }),
+      Provider.distinct('area', { status: 'approved', isBanned: { $ne: true } }),
+      Provider.distinct('specialization', {
+        role: 'doctor', status: 'approved', isBanned: { $ne: true },
+      }),
     ]);
     res.json({
       areas: areas.filter(Boolean).sort(),
