@@ -1,0 +1,26 @@
+# Render blueprint for the MediQ API.
+# In Render: New > Blueprint > pick this repo. It reads this file.
+# MONGO_URI, JWT_SECRET and the ADMIN_* values are marked sync:false, so Render
+# prompts for them instead of ever storing them in the repository.
+services:
+  - type: web
+    name: mediq-api
+    runtime: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: 24.13.1
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: ADMIN_NAME
+        sync: false
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
