@@ -1,13 +1,12 @@
-// OWNER: Member A
-// Holds the logged-in doctor and their JWT. The token also lives in
-// localStorage so a page refresh does not log the doctor out.
+// Holds the logged-in provider (doctor or pharmacy) and their JWT.
+// The token also lives in localStorage so a refresh does not log them out.
 import { createContext, useContext, useEffect, useState } from 'react';
 import { getMe } from '../api';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [doctor, setDoctor] = useState(null);
+  const [provider, setProvider] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -16,23 +15,23 @@ export function AuthProvider({ children }) {
       return;
     }
     getMe()
-      .then(setDoctor)
+      .then(setProvider)
       .catch(() => localStorage.removeItem('mediq_token'))
       .finally(() => setLoading(false));
   }, []);
 
-  const login = ({ token, doctor }) => {
+  const signIn = ({ token, provider }) => {
     localStorage.setItem('mediq_token', token);
-    setDoctor(doctor);
+    setProvider(provider);
   };
 
-  const logout = () => {
+  const signOut = () => {
     localStorage.removeItem('mediq_token');
-    setDoctor(null);
+    setProvider(null);
   };
 
   return (
-    <AuthContext.Provider value={{ doctor, loading, login, logout }}>
+    <AuthContext.Provider value={{ provider, loading, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );

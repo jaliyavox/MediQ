@@ -17,16 +17,10 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-app.use('/api/clinics', require('./routes/clinics'));
-app.use('/api/pharmacies', require('./routes/pharmacies'));
-app.use('/api/medicines', require('./routes/medicines'));
-app.use('/api/stock', require('./routes/stock'));
-app.use('/api/tokens', require('./routes/tokens'));
-
-// Doctor portal (Member A)
 app.use('/api/auth', require('./routes/auth'));
-app.use('/api/doctors', require('./routes/doctors'));
+app.use('/api/providers', require('./routes/providers'));
 app.use('/api/leads', require('./routes/leads'));
+app.use('/api/reviews', require('./routes/reviews'));
 
 app.use((req, res) => {
   res.status(404).json({ message: 'Route not found' });

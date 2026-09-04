@@ -1,317 +1,225 @@
-# Mini Hackathon Plan — MediQ (Healthcare, MERN Stack)
+# MediQ — Build Plan
 
-SE3090 Assignment 2 · Team build plan · 4 members
-
----
-
-## 0. Before anyone starts — known blocker
-
-`npm install` currently fails on this network. A **Fortinet FortiGate firewall
-is intercepting TLS**: it re-signs `registry.npmjs.org` with its own CA, and
-that CA is not in the macOS trust store, so npm cannot verify the chain and
-hangs.
-
-Fix it before the clock starts, in this order:
-
-1. **Phone hotspot** — fastest, no config, works immediately. Run
-   `npm install` in both folders, then you can go back to campus wifi.
-2. **Get the CA from IT** — ask for the FortiGate root certificate, then
-   `export NODE_EXTRA_CA_CERTS=/path/to/fortinet-ca.pem` and add
-   `cafile=/path/to/fortinet-ca.pem` to `~/.npmrc`. This is the correct fix.
-3. **Last resort:** `npm config set strict-ssl false`. This turns off
-   certificate checking entirely — it will unblock you, but do not leave it
-   set after the hackathon.
-
-Everyone must confirm `npm install` works before you split up, or three
-people will be blocked at once.
+SE3090 Assignment 2 · Mini Hackathon · 4 members
 
 ---
 
-## 1. Problem
+## 1. What MediQ is
 
-Sri Lankan patients, especially outside Colombo, waste hours at government
-OPD clinics because they cannot see the current queue length before leaving
-home, and they cannot check which nearby pharmacy actually has a prescribed
-medicine in stock. This causes repeat trips, crowding, and delayed treatment
-for people who cannot easily take time off work.
+A directory that connects Sri Lankan patients to doctors and pharmacies near
+them, so they can check and contact before travelling.
 
-## 2. Solution — MediQ
+Two sides, one app:
 
-A web app with two sides.
+- **Patients** browse, compare and contact — no account needed
+- **Doctors and pharmacies** register, get listed, and receive patient requests
 
-**For patients:**
-1. Browse clinics/hospitals with a **live** queue estimate
-2. Book a queue token for a chosen clinic and time slot
-3. Search pharmacies for medicine stock availability
-4. Find a doctor by specialization and area, send a consultation request,
-   and leave a star rating
+## 2. The problem
 
-**For doctors:**
-5. Register and log in (JWT), get listed publicly, and see the patient
-   leads and reviews that come in
+Outside Colombo, finding the right doctor means asking around, and finding a
+medicine means travelling pharmacy to pharmacy hoping one has it. People take a
+day off work, pay for transport, and often come home with nothing. There is no
+single place to see who practises nearby, what they charge, or whether a
+pharmacy can supply a prescription. That cost falls hardest on people who
+cannot easily take time off.
 
-No medical advice or diagnosis is given. The app only shows queue, stock and
-listing information.
+## 3. What users can actually do
 
-> **The live queue estimate is the demo centrepiece.** A clinic's wait is
-> computed as `(walkInQueue + booked tokens) × avgMinsPerPatient`. So when you
-> book a token on stage and go back to the Clinics page, the wait time visibly
-> jumps. Do not replace this with a static seeded number.
+**As a patient (no login):**
 
-## 3. Mapping to the 10 Minimum Requirements
+1. Browse every listed doctor, filtered by **specialization** and **area**
+2. Browse every listed pharmacy, filtered by **area**
+3. Search any listing by name
+4. Open a listing to see the fee or opening hours, contact number, and what
+   other patients said
+5. Send a **consultation request** to a doctor — name, phone, note
+6. Send a **medicine enquiry** to a pharmacy — name, phone, the medicine needed
+7. Leave a **star rating and comment** on any doctor or pharmacy
 
-| # | Requirement | How MediQ meets it |
+**As a doctor:**
+
+8. Register with specialization, area and consultation fee
+9. Log in and stay logged in across refreshes
+10. See every patient request in a dashboard, with phone numbers
+11. Mark a request as new → contacted → closed
+12. See their average rating and every review left for them
+
+**As a pharmacy:**
+
+13. Register with area and opening hours
+14. Receive medicine enquiries showing exactly which medicine is wanted
+15. Same dashboard, statuses, ratings and reviews as a doctor
+
+**Explicitly not in scope:** queue tokens, appointment scheduling, medicine
+stock inventory, patient accounts, payments, prescriptions.
+
+## 4. Mapping to the 10 Minimum Requirements
+
+| # | Requirement | Where it lives |
 |---|---|---|
-| 1 | Landing page / main UI | Home page explaining MediQ + nav to features |
-| 2 | Problem explanation in-app | "About the problem" section on Home page |
-| 3 | 2+ functional features | Queue booking, medicine stock search, doctor listing + leads |
-| 4 | A form with input | Booking form, doctor registration, login, lead request, review form |
-| 5 | Input validation | Required fields, NIC/phone format, password rules, rating 1–5 |
-| 6 | Display/search/filter/calculate | Filter clinics/pharmacies/doctors; calculate live wait time and average rating |
-| 7 | Responsive UI | Tailwind CSS, mobile-first |
-| 8 | Navigation between sections | React Router: Home, Clinics, Book, Pharmacies, Doctors, Doctor portal |
-| 9 | Sample data | Seed script: 10 clinics, 10 pharmacies, 15 medicines, stock, 6 doctors, reviews |
-| 10 | Demonstrated value | Book a token live and watch the wait time change; find a medicine live |
+| 1 | Landing page / main UI | `Home.jsx` — hero, how-it-works, listing call to action |
+| 2 | Problem explained in-app | "The problem we are solving" section on Home |
+| 3 | 2+ functional features | Doctor directory, pharmacy directory, lead capture, reviews, provider accounts |
+| 4 | A form with input | Register, Login, LeadForm, ReviewForm — four separate forms |
+| 5 | Input validation | `validateInput.js` — per-field messages rendered under each input |
+| 6 | Display/search/filter/**calculate** | Filter by role, area, specialization, name; **average rating** aggregated from reviews |
+| 7 | Responsive UI | Tailwind v4, mobile-first, Navbar collapses to a menu under 640px |
+| 8 | Navigation | React Router: Home, Doctors, Pharmacies, Listing detail, Register, Login, Dashboard |
+| 9 | Sample data | `npm run seed` — 8 doctors, 8 pharmacies, ~25 reviews, 2 leads |
+| 10 | Demonstrated value | Send a request live, log in as that provider, show it arrived |
 
-## 4. Tech Stack (MERN)
+> **Requirement 6 needs a calculation, and average rating is the only one.**
+> It is aggregated from the Review collection in `providerController.js`, never
+> stored on the provider. Do not replace it with a hardcoded number.
 
-- **MongoDB Atlas** — free cluster
-- **Express.js** — REST API, one controller per resource
-- **React 19** (Vite) — React Router, Axios
-- **Node.js** — Express **5**, dotenv (note: Express 5 and Mongoose 9, not 4/8)
-- **Tailwind CSS v4** — via `@tailwindcss/vite`
-- **bcryptjs + jsonwebtoken** — doctor authentication
+## 5. Tech Stack
 
-## 5. Data Models
+React 19 (Vite 8) · React Router 7 · Axios · Tailwind CSS v4 ·
+Node 24 · **Express 5** · MongoDB Atlas (**Mongoose 9**) · bcryptjs · jsonwebtoken
 
-| Model | Fields | Owner |
-|---|---|---|
-| `Clinic` | name, area, district, type, walkInQueue, avgMinsPerPatient, slots[] | C |
-| `Pharmacy` | name, area, district, contact | C |
-| `Medicine` | name, category | C |
-| `Stock` | pharmacyId, medicineId, quantity, updatedAt | C |
-| `QueueToken` | patientName, contactNumber, nic, clinicId, slotTime, tokenNumber, status | C |
-| `Doctor` | name, email, passwordHash, specialization, area, district, fee, status | A |
-| `Lead` | doctorId, patientName, contactNumber, note, status | A |
-| `Review` | doctorId, patientName, rating, comment | A |
+> Express 5 and Mongoose 9, not 4 and 8. Most tutorials online are Express 4 —
+> error-handling middleware and some route patterns differ.
 
-All eight models are already written and committed. Do not redefine them —
-if a field is missing, add it and tell the team.
+## 6. Data Models
 
-## 6. API Endpoints (the agreed contract)
+Three collections. One `Provider` model covers both doctors and pharmacies via
+a `role` field, so both share one login, one lead inbox and one review system.
+
+| Model | Fields |
+|---|---|
+| `Provider` | role (`doctor`\|`pharmacy`), name, email, passwordHash, area, district, contact, about, specialization, fee, openHours, status |
+| `Lead` | providerId, patientName, contactNumber, medicineName, note, status (`new`\|`contacted`\|`closed`) |
+| `Review` | providerId, patientName, rating (1–5), comment |
+
+`passwordHash` is stripped in the model's `toJSON`, so it can never leak
+through an API response.
+
+## 7. API
 
 ```
-GET    /api/health                     is the API up?
+GET    /api/health                        is the API up?
 
-GET    /api/clinics?area=&type=&q=     list + filter, includes live queue
-GET    /api/clinics/:id
-POST   /api/tokens                     book a token (validated)
-GET    /api/tokens?clinicId=
+GET    /api/providers?role=&area=&specialization=&q=
+GET    /api/providers/:id
+GET    /api/providers/meta/filters        areas + specializations for dropdowns
+GET    /api/providers/:id/reviews
+POST   /api/providers/:id/reviews         public
 
-GET    /api/pharmacies?area=&q=
-GET    /api/medicines?q=
-GET    /api/stock?medicine=&area=      medicine availability across pharmacies
+POST   /api/leads                         public
+GET    /api/leads/mine                    JWT required
+PATCH  /api/leads/:id                     JWT required, owner only
 
-POST   /api/auth/register              doctor signs up   -> { token, doctor }
-POST   /api/auth/login                 doctor logs in    -> { token, doctor }
-GET    /api/auth/me                    current doctor    (JWT required)
-GET    /api/doctors?specialization=&area=&q=
-GET    /api/doctors/:id
-POST   /api/leads                      patient requests a consultation
-GET    /api/leads/mine                 that doctor's own leads (JWT required)
-GET    /api/doctors/:id/reviews
-POST   /api/doctors/:id/reviews
+POST   /api/auth/register                 -> { token, provider }
+POST   /api/auth/login                    -> { token, provider }
+GET    /api/auth/me                       JWT required
+GET    /api/reviews/mine                  JWT required
 ```
 
-The frontend never calls axios directly — every call goes through
-`frontend/src/api/index.js`, which already has a typed helper and the exact
-response shape for each endpoint above.
+Validation failures return `400` with `{ message, errors: { field: 'why' } }`.
+The frontend reads `err.errors` and renders each message under its own input.
 
-## 7. Team Components and File Ownership
+The frontend never calls axios directly — everything goes through
+`frontend/src/api/index.js`.
 
-Each member owns a **disjoint set of files** and works on their **own branch**.
-If you stay inside your files, you will never hit a merge conflict.
+## 8. Current State
 
-### Member A — Doctor portal (backend + frontend)
-Branch: `feat/doctor-portal`
+The app is **built and passing tests**. `npm test` in `backend/` runs 30
+end-to-end checks against a throwaway in-memory MongoDB — registration, login,
+filtering, lead capture, the rating calculation, and the access-control rules.
+It needs no Atlas connection.
 
-| Files | State |
-|---|---|
-| `backend/models/{Doctor,Lead,Review}.js` | written |
-| `backend/middleware/auth.js` (JWT verify) | written |
-| `backend/controllers/authController.js` | **stub — your work** |
-| `backend/controllers/doctorController.js` | **stub — your work** |
-| `backend/controllers/leadController.js` | **stub — your work** |
-| `backend/controllers/reviewController.js` | **stub — your work** |
-| `backend/routes/{auth,doctors,leads}.js` | wired |
-| `frontend/src/context/AuthContext.jsx` | written |
-| `frontend/src/components/ProtectedRoute.jsx` | written |
-| `frontend/src/pages/{Doctors,DoctorRegister,DoctorLogin,DoctorDashboard}.jsx` | **stub — your work** |
-| `frontend/src/components/{DoctorCard,ReviewForm}.jsx` | **stub — your work** |
+What is **not** yet done: nothing has run against the real Atlas cluster, and
+nothing is deployed.
 
-Every stub has a comment block saying exactly what to build. **Start this only
-after B, C and D have the core booking + stock flow working** — this is the
-biggest single piece and it is not one of the 10 minimum requirements.
+This scaffold was generated with Claude and must be declared as such in the
+README and the submission PDF — that is worth 10 marks, and the rubric asks you
+to explain AI-generated code line by line in the demo. Each member owns their
+component: read it, extend it, test it, and be able to talk through it.
 
-Two things to get right:
-- `GET /api/leads/mine` must filter on `req.doctorId` from the JWT, never on a
-  `doctorId` sent by the client, or any doctor could read another doctor's
-  patient contacts.
-- Login must return the same error for a wrong email and a wrong password, so
-  the form does not reveal which accounts exist.
+## 9. Team Components
 
-### Member B — UI shell and clinics
-Branch: `feat/ui-shell-clinics`
+Each member owns a disjoint set of files and works on their own branch.
 
-| Files | State |
-|---|---|
-| `frontend/src/components/Navbar.jsx` | basic version written, make it responsive |
-| `frontend/src/index.css` | Tailwind imported, add your tokens |
-| `frontend/src/pages/Home.jsx` | **stub — your work** (requirements 1 and 2) |
-| `frontend/src/pages/Clinics.jsx` | **stub — your work** (requirement 6) |
-| `frontend/src/components/ClinicCard.jsx` | **stub — your work** |
+### Member A — Accounts and dashboard · `feat/accounts`
+`backend/controllers/authController.js` · `backend/middleware/auth.js` ·
+the auth half of `validateInput.js` · `frontend/src/context/AuthContext.jsx` ·
+`components/ProtectedRoute.jsx` · `pages/Register.jsx` · `pages/Login.jsx` ·
+`pages/Dashboard.jsx`
 
-You own how the whole app looks. Requirement 7 (responsive) is graded on your
-work — test at 375px width early, not at the end.
+Extensions worth doing: password strength meter, edit-your-listing page,
+lead counters, "forgot password" stub.
 
-### Member C — Core backend API and sample data
-Branch: `feat/backend-core`
+### Member B — UI shell and home · `feat/ui-shell`
+`components/Navbar.jsx` · `components/Field.jsx` · `components/Stars.jsx` ·
+`pages/Home.jsx` · `pages/NotFound.jsx` · `src/index.css`
 
-| Files | State |
-|---|---|
-| `backend/models/{Clinic,Pharmacy,Medicine,Stock,QueueToken}.js` | written |
-| `backend/controllers/clinicController.js` | written — includes the live queue calc |
-| `backend/controllers/tokenController.js` | written |
-| `backend/controllers/{pharmacy,medicine,stock}Controller.js` | written |
-| `backend/middleware/validateInput.js` | written |
-| `backend/seed/seedData.js` | written |
+You own how the whole app looks — **requirement 7 is graded on your work**.
+Test at 375px width from the start.
 
-The API is scaffolded and syntax-checked but **has never been run against a
-real database**. Your job is to make it actually work: create the Atlas
-cluster, run `npm run seed`, hit every endpoint, fix what breaks, and tell B, D
-and A the moment their endpoints return real data. You are the critical path —
-everyone else is blocked until the API is live.
+### Member C — Directory and search · `feat/directory`
+`backend/controllers/providerController.js` · `pages/Directory.jsx` ·
+`pages/Doctors.jsx` · `pages/Pharmacies.jsx` · `components/SearchBar.jsx` ·
+`components/ProviderCard.jsx`
 
-### Member D — Booking, pharmacy search, deployment
-Branch: `feat/booking-pharmacy-ui`
+You own **requirement 6**, the biggest single scoring item: search, filtering
+and the average-rating calculation. Extensions: sort by rating or fee,
+district filter, result count, pagination.
 
-| Files | State |
-|---|---|
-| `frontend/src/pages/BookToken.jsx` | **stub — your work** (requirements 4 and 5) |
-| `frontend/src/components/TokenForm.jsx` | **stub — your work** |
-| `frontend/src/pages/Pharmacies.jsx` | **stub — your work** |
-| `frontend/src/components/{PharmacyCard,SearchBar}.jsx` | **stub — your work** |
-| `README.md`, deployment | **your work** |
+### Member D — Contact, reviews, deployment · `feat/contact-reviews`
+`backend/controllers/leadController.js` · `backend/controllers/reviewController.js` ·
+`backend/seed/seedData.js` · `pages/ProviderDetail.jsx` ·
+`components/LeadForm.jsx` · `components/ReviewForm.jsx` · `README.md` · deployment
 
-The booking form is the single most-graded screen in the app (requirements 4,
-5 and 10). Render per-field errors from `err.errors` — the backend already
-returns them keyed by field name. You also own deployment and the Git history.
+You own **requirements 4, 5 and 10** — the forms and the live demo — plus
+Atlas, deployment and merging pull requests.
 
-### Locked files — nobody edits alone
-`backend/server.js` · `backend/app.js` · `frontend/src/App.jsx` ·
-`frontend/src/api/client.js` · `frontend/src/api/index.js` ·
-`frontend/vite.config.js` · both `package.json`
+### Locked files — tell the team before editing
+`backend/server.js` · `backend/app.js` · `backend/models/*` ·
+`frontend/src/App.jsx` · `frontend/src/api/*` · `frontend/vite.config.js` ·
+both `package.json`
 
-All routes and all API helpers are already written in these, so you should not
-need to. If you genuinely do, say so in the group chat first — these are the
-only files where four people can collide.
-
-## 8. Git Workflow
+## 10. Setup
 
 ```bash
 git clone https://github.com/jaliyavox/MediQ.git
 cd MediQ
-git checkout -b feat/your-part            # your branch from section 7
 
-cd backend  && npm install && cp .env.example .env
+cd backend   && npm install && cp .env.example .env    # fill MONGO_URI, JWT_SECRET
 cd ../frontend && npm install && cp .env.example .env.local
 
-# terminal 1
-cd backend && npm run seed && npm run dev
-# terminal 2
-cd frontend && npm run dev
+cd backend   && npm run seed && npm run dev    # terminal 1, port 5000
+cd frontend  && npm run dev                    # terminal 2, port 5173
 ```
 
-Rules:
-- **Commit small and often** — Git history is worth 10 marks and graders can
-  see one big dump at the end.
-- Push your branch and open a PR into `main`. Member D reviews and merges.
-- `git pull origin main` before you start each new chunk of work.
-- Never commit `.env`. It is gitignored — keep it that way.
+Check <http://localhost:5000/api/health> before writing code. Run `npm test` in
+`backend/` any time — it needs no database.
 
-## 9. Build Order (4-hour schedule)
+**Demo logins after seeding:** `nimal@mediq.demo` (doctor) and
+`senehasa@mediq.demo` (pharmacy), both `mediq1234`.
 
-| Time | What | Who |
-|---|---|---|
-| 0–15 | Everyone: clone, `npm install` (see section 0), confirm it runs | all |
-| 15–30 | Atlas cluster up, `npm run seed`, `/api/health` returns connected | C |
-| 30–90 | Home + Clinics page; booking form; API fixes | B, D, C |
-| 90–150 | Pharmacy search; live queue verified end to end | D, C, B |
-| 150–210 | **Only once the above works:** doctor portal | A (+ any free member) |
-| 210–225 | Deploy backend (Render/Railway) + frontend (Vercel/Netlify) | D |
-| 225–240 | Test the live link in incognito, record the 2-min video, submit | all |
+> **If `npm install` hangs on campus wifi:** the university Fortinet firewall
+> intercepts TLS and breaks the npm registry. Use a phone hotspot.
 
-If you are behind at minute 150, **cut the doctor portal**, not the booking
-flow. The 20-mark core requirements come first.
+## 11. Atlas and Deployment
 
-## 10. Deployment Notes
-
-- **MongoDB Atlas:** set Network Access to `0.0.0.0/0`, or the deployed
-  backend cannot reach the database. This is the classic last-minute failure.
-- **Render free tier** cold-starts at roughly 50 seconds. Hit the live URL once
-  right before recording the demo video so it is already warm.
-- Set `VITE_API_URL` on the frontend host to the deployed backend URL, and
-  `MONGO_URI` + `JWT_SECRET` on the backend host.
+- **Network Access must be `0.0.0.0/0`.** A single whitelisted IP breaks the
+  moment anyone changes network, and breaks Render entirely.
+- The connection string needs a database name: `.../mediq?retryWrites=true...`
+  Without it everything lands in a database called `test`.
+- **Rotate the database password before submitting** if it has ever been pasted
+  into a chat, a screenshot or a commit.
+- Set `MONGO_URI` and `JWT_SECRET` on the backend host; set `VITE_API_URL` to
+  the deployed backend URL on the frontend host.
+- Render's free tier cold-starts at ~50s. Hit the URL once before recording.
 - Test the live link in an **incognito window** before submitting.
 
-## 11. README.md Checklist (Member D)
+## 12. Rubric Focus (100 marks)
 
-- [ ] Project title and one-line pitch
-- [ ] Selected problem (Sri Lankan context)
-- [ ] Proposed solution summary
-- [ ] Main features list
-- [ ] Technologies used
-- [ ] AI tools used during development, one line each
-- [ ] Team member names, IDs, and what each person built
-- [ ] Installation and run instructions
-- [ ] Deployed application link
-- [ ] Demonstration video link
-
-## 12. Submission PDF Checklist
-
-- [ ] Git repository link
-- [ ] Deployed application link
-- [ ] 2-minute demo video link
-- [ ] Team member names and student IDs
-- [ ] Short problem/solution description
-- [ ] Technologies and AI tools list
-- [ ] AI Prompt Log (tool, exact prompt, purpose, how output was checked)
-- [ ] AI usage declaration
-
-## 13. Rubric Focus (100 marks)
-
-- **Minimum functional requirements — 20.** The biggest chunk. All 10 basics
-  before anything else.
-- **Practicality & creativity — 15.** Pitch: "stop wasting trips to clinics
-  and pharmacies."
-- **Quality & usability — 15.** Empty search results and bad form input must
-  be handled gracefully, never crash.
+- **Minimum requirements — 20.** All 10 above are covered; keep them working.
+- **Practicality & creativity — 15.** Pitch: "check before you travel."
+- **Quality & usability — 15.** Empty results and bad input must never crash.
+  Every list already has an empty state — keep it that way.
 - **Successful deployment — 10.** Incognito test before submitting.
 - **Git & documentation — 10.** Small commits throughout, complete README.
-- **Effective use of AI — 10.** This means AI tools used to *build* the app
-  (Claude, Copilot), not an AI feature inside it. Keep the prompt log as you
-  go, and be ready to explain any AI-generated code line by line.
-
-## 14. Deliberately Skipped
-
-- Patient login (only doctors authenticate)
-- Payment integration
-- Real hospital data or external APIs
-- In-app AI / symptom checker — dropped, it earns no rubric marks
-- Admin approval UI (doctors are approved directly in the database for now)
-
-## 15. Data Caution
-
-All seeded doctors, pharmacies and reviews are **fictional**. The app shows
-public star ratings against a named person, so never seed or demo with a real
-practitioner's name.
+- **Effective use of AI — 10.** Declare the AI-generated scaffold honestly and
+  keep the prompt log. Be ready to explain any of it line by line.

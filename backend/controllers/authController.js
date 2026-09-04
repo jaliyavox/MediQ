@@ -1,40 +1,75 @@
-// OWNER: Member A
-// Doctor registration and login with bcrypt + JWT.
-// These are stubs on purpose - this is your part to write.
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const Doctor = require('../models/Doctor');
+const Provider = require('../models/Provider');
 
-const TODO = (res, what) =>
-  res.status(501).json({ message: `Not implemented yet: ${what} (Member A)` });
-
-// Helper you will need in both register and login.
-function signToken(doctor) {
-  return jwt.sign({ id: doctor._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+function signToken(provider) {
+  return jwt.sign({ id: provider._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
 }
 
 // POST /api/auth/register
-// body: { name, email, password, specialization, area, district, fee }
-// Steps: validate the fields -> reject a duplicate email with 409
-//        -> hash with bcrypt.hash(password, 10) -> Doctor.create
-//        -> res.status(201).json({ token: signToken(doc), doctor: doc })
 exports.register = async (req, res, next) => {
-  TODO(res, 'POST /api/auth/register');
+  try {
+    const { role, name, email, password, area, district, contact, about,
+            specialization, fee, openHours } = req.body;
+
+    const existing = await Provider.findOne({ email: email.trim().toLowerCase() });
+    if (existing) {
+      return res.status(409).json({
+        message: 'That email is already registered.',
+        errors: { email: 'That email is already registered.' },
+      });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    const provider = await Provider.create({
+      role,
+      name: name.trim(),
+      email: email.trim().toLowerCase(),
+      passwordHash,
+      area: area.trim(),
+      district: district?.trim(),
+      contact: contact?.trim(),
+      about: about?.trim(),
+      ...(role === 'doctor'
+        ? { specialization: specialization.trim(), fee: fee ? Number(fee) : 0 }
+        : { openHours: openHours?.trim() }),
+    });
+
+    res.status(201).json({ token: signToken(provider), provider });
+  } catch (err) {
+    next(err);
+  }
 };
 
 // POST /api/auth/login
-// body: { email, password }
-// Steps: find the doctor by email -> bcrypt.compare(password, doctor.passwordHash)
-//        -> on failure return 401 with ONE message for both wrong email and
-//           wrong password ("Invalid email or password"), so the form does not
-//           reveal which accounts exist
-//        -> on success res.json({ token: signToken(doctor), doctor })
 exports.login = async (req, res, next) => {
-  TODO(res, 'POST /api/auth/login');
+  try {
+    const { email, password } = req.body;
+    const provider = await Provider.findOne({ email: email.trim().toLowerCase() });
+
+    // Deliberately the SAME message for an unknown email and a wrong password,
+    // so the form cannot be used to discover which accounts exist.
+    const reject = () => res.status(401).json({ message: 'Invalid email or password.' });
+
+    if (!provider) return reject();
+
+    const ok = await bcrypt.compare(password, provider.passwordHash);
+    if (!ok) return reject();
+
+    res.json({ token: signToken(provider), provider });
+  } catch (err) {
+    next(err);
+  }
 };
 
-// GET /api/auth/me   (behind requireDoctor, so req.doctorId is set)
-// -> the Doctor document (the model already strips passwordHash)
+// GET /api/auth/me   (behind requireProvider)
 exports.me = async (req, res, next) => {
-  TODO(res, 'GET /api/auth/me');
+  try {
+    const provider = await Provider.findById(req.providerId);
+    if (!provider) return res.status(404).json({ message: 'Account not found.' });
+    res.json(provider);
+  } catch (err) {
+    next(err);
+  }
 };

@@ -1,10 +1,8 @@
-// OWNER: Member A
-// Verifies the "Authorization: Bearer <token>" header and puts the doctor's
-// id on req.doctorId. Getting this subtly wrong is the usual time sink, so
-// it is written out in full - use it, don't rewrite it.
+// Verifies the "Authorization: Bearer <token>" header and puts the provider's
+// id on req.providerId.
 const jwt = require('jsonwebtoken');
 
-module.exports = function requireDoctor(req, res, next) {
+module.exports = function requireProvider(req, res, next) {
   const header = req.headers.authorization || '';
   const token = header.startsWith('Bearer ') ? header.slice(7) : null;
 
@@ -14,7 +12,7 @@ module.exports = function requireDoctor(req, res, next) {
 
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET);
-    req.doctorId = payload.id;
+    req.providerId = payload.id;
     next();
   } catch (err) {
     return res.status(401).json({ message: 'Your session expired. Please log in again.' });

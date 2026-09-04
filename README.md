@@ -1,40 +1,44 @@
 # MediQ
 
-> Skip the queue, find your medicine. A web app that shows live OPD queue
-> estimates, books clinic tokens, and finds which nearby pharmacy actually
-> has your medicine in stock.
+> Check before you travel. A directory that connects Sri Lankan patients to
+> doctors and pharmacies near them — search by area, read reviews, and send a
+> request from home.
 
-SE3090 Assignment 2 — Mini Hackathon. **Member D owns this file**; the
-checklist below is from section 11 of `hackathon-plan.md`.
+SE3090 Assignment 2 — Mini Hackathon.
 
 ## The problem
 
-Sri Lankan patients, especially outside Colombo, waste hours at government OPD
-clinics because they cannot see the queue length before leaving home, and they
-cannot check which nearby pharmacy has a prescribed medicine in stock. The
-result is repeat trips, crowding, and delayed treatment for people who cannot
+Outside Colombo, finding the right doctor means asking around, and finding a
+medicine means travelling pharmacy to pharmacy hoping one has it. People take a
+day off work, pay for transport, and often come home with nothing. There is no
+single place to see who practises nearby, what they charge, or whether a
+pharmacy can supply a prescription. That cost falls hardest on people who cannot
 easily take time off work.
 
-## Features
+## What you can do
 
-- **Live queue estimates** — a clinic's wait is computed from real booked
-  tokens, so booking one immediately changes the wait shown to everyone else
-- **Queue token booking** — validated form, per-field error messages, returns
-  a token number and how many people are ahead
-- **Medicine stock search** — search by medicine name, filter by area, see
-  quantity and out-of-stock states
-- **Doctor portal** — doctors register and log in (JWT), get listed publicly,
-  and receive patient consultation requests and star ratings
+**As a patient — no account needed**
+- Browse doctors, filtered by specialization and area
+- Browse pharmacies, filtered by area
+- Search any listing by name
+- See fees or opening hours, contact numbers, and what other patients said
+- Send a consultation request to a doctor
+- Send a medicine enquiry to a pharmacy
+- Leave a star rating and comment
+
+**As a doctor or pharmacy**
+- Register and get listed, with your area, fee or opening hours
+- Log in and stay signed in
+- See every patient request with their phone number
+- Mark requests new → contacted → closed
+- See your average rating and all your reviews
 
 ## Tech stack
 
-React 19 (Vite) · React Router · Axios · Tailwind CSS v4 ·
-Node.js · Express · MongoDB Atlas (Mongoose) · bcryptjs · jsonwebtoken
+React 19 (Vite 8) · React Router 7 · Axios · Tailwind CSS v4 ·
+Node 24 · Express 5 · MongoDB Atlas (Mongoose 9) · bcryptjs · jsonwebtoken
 
-## Running it locally
-
-> **If `npm install` hangs**, see section 0 of `hackathon-plan.md` — the campus
-> Fortinet firewall intercepts TLS and breaks the npm registry connection.
+## Running locally
 
 ```bash
 git clone https://github.com/jaliyavox/MediQ.git
@@ -46,46 +50,74 @@ cd MediQ
 ```bash
 cd backend
 npm install
-cp .env.example .env        # then fill in MONGO_URI and JWT_SECRET
-npm run seed                # loads the sample data
-npm run dev                 # http://localhost:5000
+cp .env.example .env        # fill in MONGO_URI and JWT_SECRET
+npm run seed                # 8 doctors, 8 pharmacies, reviews
+npm run dev                 # http://localhost:5001
 ```
 
-Check it is up: <http://localhost:5000/api/health>
+Health check: <http://localhost:5001/api/health>
 
 **Frontend**
 
 ```bash
 cd frontend
 npm install
-cp .env.example .env.local  # VITE_API_URL=http://localhost:5000/api
+cp .env.example .env.local
 npm run dev                 # http://localhost:5173
 ```
 
-**Demo doctor login:** `nimal@mediq.demo` / `mediq1234`
+**Demo logins:** `nimal@mediq.demo` (doctor) · `senehasa@mediq.demo` (pharmacy)
+· both `mediq1234`
+
+> The API runs on **5001**, not 5000 — on macOS, AirPlay Receiver occupies port
+> 5000 and answers with a 403, which looks like a broken API.
+
+## Tests
+
+```bash
+cd backend && npm test
+```
+
+30 end-to-end checks against a throwaway in-memory MongoDB — registration,
+login, filtering, lead capture, the average-rating calculation, and the
+access-control rules. Needs no Atlas connection.
 
 ## Project structure
 
 ```
-backend/    models, routes, controllers, middleware, seed
-frontend/   src/{pages,components,context,api}
+backend/
+  models/       Provider, Lead, Review
+  controllers/  auth, provider, lead, review
+  middleware/   auth (JWT), validateInput
+  seed/         sample data
+  tests/        end-to-end suite
+frontend/
+  src/pages/       Home, Doctors, Pharmacies, ProviderDetail,
+                   Register, Login, Dashboard
+  src/components/  Navbar, ProviderCard, SearchBar, LeadForm,
+                   ReviewForm, Field, Stars, ProtectedRoute
+  src/api/         axios client + the API contract
+  src/context/     AuthContext
 ```
 
-File ownership per team member is in section 7 of `hackathon-plan.md`.
+Per-member ownership is in [MEMBER-TASKS.md](MEMBER-TASKS.md).
 
 ## Team
 
 | Member | Student ID | Built |
 |---|---|---|
-| _TODO_ | _TODO_ | Doctor portal — auth, listing, leads, reviews |
-| _TODO_ | _TODO_ | UI shell, Home page, clinics list |
-| _TODO_ | _TODO_ | Core backend API, validation, sample data |
-| _TODO_ | _TODO_ | Booking form, pharmacy search, deployment |
+| _TODO_ | _TODO_ | Accounts and dashboard |
+| _TODO_ | _TODO_ | UI shell and home page |
+| _TODO_ | _TODO_ | Directory and search |
+| _TODO_ | _TODO_ | Contact forms, reviews, deployment |
 
 ## AI tools used
 
-_TODO — one line per tool, e.g. "Claude — scaffolded the Express models and
-the API contract; we reviewed each endpoint and wrote the controllers."_
+_TODO — one line per tool, and keep the prompt log for the submission PDF._
+
+Example: "Claude (Claude Code) — scaffolded the Express API, the Provider/Lead/
+Review models and the React pages, and wrote the end-to-end test suite. Each
+member reviewed, extended and tested their own component."
 
 ## Links
 
