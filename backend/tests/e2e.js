@@ -1,7 +1,7 @@
 // End-to-end test of the real API against a throwaway in-memory MongoDB.
 // Run with:  npm test
 // Needs no Atlas connection and never touches your real data.
-process.env.JWT_SECRET = 'e2e-secret';
+process.env.JWT_SECRET = require('node:crypto').randomBytes(32).toString('hex');
 const { MongoMemoryServer } = require('mongodb-memory-server');
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');

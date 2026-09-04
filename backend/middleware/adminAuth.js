@@ -10,7 +10,10 @@ module.exports = async function requireAdmin(req, res, next) {
   }
 
   try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET);
+    const payload = jwt.verify(
+      token,
+      process.env.ADMIN_JWT_SECRET || process.env.JWT_SECRET
+    );
     if (payload.kind !== 'admin') throw new Error('Wrong token type');
 
     const admin = await Admin.findById(payload.id);

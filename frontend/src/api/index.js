@@ -28,6 +28,9 @@ export const addReview = (providerId, body) =>
 export const getReviews = (providerId) =>
   client.get(`/providers/${providerId}/reviews`).then((r) => r.data);
 
+export const getTopReviews = () =>
+  client.get('/reviews/top').then((r) => r.data);
+
 /* ---------------- Provider accounts (doctor or pharmacy) ---------------- */
 
 // body: { role, name, email, password, area, district, contact, about,

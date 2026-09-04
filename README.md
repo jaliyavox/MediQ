@@ -51,9 +51,9 @@ npm run setup
 ```
 
 `npm run setup` installs both apps and creates `backend/.env` and
-`frontend/.env.local` from their examples. Open `backend/.env` and replace
-`<password>` with the MongoDB password shared privately by the team. Never
-commit that file or post the password in GitHub or chat.
+`frontend/.env.local` from their examples. Open `backend/.env` and set
+`MONGO_URI` to the MongoDB Atlas connection string shared privately by the
+team. Never commit that file or post the connection string in GitHub or chat.
 
 Start both apps from the repository root:
 
@@ -105,6 +105,39 @@ is stored in MongoDB.
 
 > The API runs on **5001**, not 5000 — on macOS, AirPlay Receiver occupies port
 > 5000 and answers with a 403, which looks like a broken API.
+
+## Production deployment
+
+Deploy the backend first so its public URL is available when configuring the
+frontend. After Vercel assigns the frontend URL, set that exact origin as the
+Render service's `FRONTEND_URL`; the resulting service restart enables browser
+requests from the deployed frontend.
+
+### Render backend
+
+- Root directory: `backend`
+- Build command: `npm install`
+- Start command: `npm start`
+- Health check path: `/api/health`
+- Environment variables: `MONGO_URI`, `JWT_SECRET`, `ADMIN_JWT_SECRET`,
+  `FRONTEND_URL`, and optionally `DNS_SERVERS`, `ADMIN_NAME`, `ADMIN_EMAIL`,
+  and `ADMIN_PASSWORD`
+
+Render supplies `PORT`; do not set it manually. Set `FRONTEND_URL` to the final
+Vercel origin, for example `https://mediq.vercel.app`, without a trailing slash.
+`ADMIN_JWT_SECRET` is optional for backwards compatibility and falls back to
+`JWT_SECRET` when it is not set.
+
+### Vercel frontend
+
+- Root directory: `frontend`
+- Framework preset: Vite
+- Build command: `npm run build`
+- Output directory: `dist`
+- Environment variable: `VITE_API_URL=https://your-render-service.onrender.com/api`
+
+The Vercel rewrite in `frontend/vercel.json` sends client-side routes such as
+`/admin`, `/login`, and `/dashboard` to the React application on refresh.
 
 ## Tests
 

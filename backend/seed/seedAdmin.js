@@ -17,6 +17,12 @@ async function seedAdmin() {
   }
 
   await connectDatabase();
+
+  // Say up front which account is being written. The seed upserts on the
+  // email, so a typo creates a second admin rather than updating the first.
+  const existing = await Admin.findOne({ email });
+  console.log(`${existing ? 'Updating existing' : 'Creating new'} admin: ${email}`);
+
   const passwordHash = await bcrypt.hash(password, 10);
   await Admin.findOneAndUpdate(
     { email },

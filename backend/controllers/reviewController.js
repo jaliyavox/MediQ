@@ -34,6 +34,44 @@ exports.getReviews = async (req, res, next) => {
   }
 };
 
+// GET /api/reviews/top - highest-rated public reviews, newest first for ties
+exports.getTopReviews = async (req, res, next) => {
+  try {
+    const reviews = await Review.aggregate([
+      {
+        $lookup: {
+          from: 'providers',
+          localField: 'providerId',
+          foreignField: '_id',
+          as: 'provider',
+        },
+      },
+      { $unwind: '$provider' },
+      {
+        $match: {
+          'provider.status': 'approved',
+          'provider.isBanned': { $ne: true },
+        },
+      },
+      { $sort: { rating: -1, createdAt: -1 } },
+      { $limit: 6 },
+      {
+        $project: {
+          _id: 1,
+          patientName: 1,
+          rating: 1,
+          comment: 1,
+          createdAt: 1,
+          provider: { _id: 1, name: 1, role: 1, area: 1 },
+        },
+      },
+    ]);
+    res.json(reviews);
+  } catch (err) {
+    next(err);
+  }
+};
+
 // GET /api/reviews/mine  (behind requireProvider)
 exports.getMyReviews = async (req, res, next) => {
   try {

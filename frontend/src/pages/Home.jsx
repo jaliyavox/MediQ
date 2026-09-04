@@ -1,7 +1,9 @@
 import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { getFilterOptions, getProviders } from '../api';
+import { getFilterOptions, getProviders, getTopReviews } from '../api';
 import Stars from '../components/Stars';
+import ProviderCard from '../components/ProviderCard';
+import SearchBar from '../components/SearchBar';
 
 // A composed preview of a real listing card, used as the hero visual.
 // Built from the same tokens as the app, so the hero cannot drift out of sync
@@ -55,16 +57,51 @@ function HeroPreview() {
 
 export default function Home() {
   const [areas, setAreas] = useState([]);
+  const [specializations, setSpecializations] = useState([]);
   const [counts, setCounts] = useState({ doctors: null, pharmacies: null });
+  const [role, setRole] = useState('doctor');
+  const [query, setQuery] = useState('');
+  const [area, setArea] = useState('');
+  const [specialization, setSpecialization] = useState('');
+  const [matches, setMatches] = useState([]);
+  const [reviews, setReviews] = useState([]);
+  const [searching, setSearching] = useState(false);
 
   // The numbers on the page are read from the database, not hardcoded, so a
   // demo never shows a figure that contradicts the listings.
   useEffect(() => {
-    getFilterOptions().then((o) => setAreas(o.areas)).catch(() => {});
+    getFilterOptions().then((o) => {
+      setAreas(o.areas);
+      setSpecializations(o.specializations);
+    }).catch(() => {});
+    getTopReviews().then(setReviews).catch(() => {});
     Promise.all([getProviders({ role: 'doctor' }), getProviders({ role: 'pharmacy' })])
       .then(([d, p]) => setCounts({ doctors: d.length, pharmacies: p.length }))
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    setSearching(true);
+    const timer = setTimeout(() => {
+      getProviders({
+        role,
+        q: query || undefined,
+        area: area || undefined,
+        specialization: role === 'doctor' ? specialization || undefined : undefined,
+      })
+        .then((data) => !cancelled && setMatches(data.slice(0, 6)))
+        .catch(() => !cancelled && setMatches([]))
+        .finally(() => !cancelled && setSearching(false));
+    }, 250);
+
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [role, query, area, specialization]);
+
+  const switchRole = (nextRole) => {
+    setRole(nextRole);
+    setSpecialization('');
+  };
 
   return (
     <>
@@ -101,6 +138,57 @@ export default function Home() {
           </div>
 
           <HeroPreview />
+        </div>
+      </section>
+
+      {/* Search directly from the landing page */}
+      <section className="border-y border-line bg-muted/60">
+        <div className="mx-auto max-w-6xl px-5 py-16 sm:px-8">
+          <div className="flex flex-wrap items-end justify-between gap-5">
+            <div>
+              <p className="eyebrow">Start here</p>
+              <h2 className="mt-3 text-4xl sm:text-5xl">Find care nearby</h2>
+            </div>
+            <div className="flex rounded-full border border-line bg-surface p-1" role="group" aria-label="Provider type">
+              {[
+                { value: 'doctor', label: 'Doctors' },
+                { value: 'pharmacy', label: 'Pharmacies' },
+              ].map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => switchRole(option.value)}
+                  className={`rounded-full px-4 py-2 text-sm transition ${role === option.value ? 'bg-ink text-white' : 'text-body hover:text-ink'}`}
+                  aria-pressed={role === option.value}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-8">
+            <SearchBar
+              query={query} onQuery={setQuery}
+              area={area} onArea={setArea} areas={areas}
+              {...(role === 'doctor'
+                ? { specialization, onSpecialization: setSpecialization, specializations }
+                : {})}
+            />
+          </div>
+
+          <div className="mt-5 flex items-center justify-between text-sm text-subtle">
+            <span>{searching ? 'Searching…' : `${matches.length} nearby ${role}${matches.length === 1 ? '' : 's'}`}</span>
+            <Link to={role === 'doctor' ? '/doctors' : '/pharmacies'} className="text-body underline underline-offset-4 hover:text-ink">
+              View all
+            </Link>
+          </div>
+
+          {!searching && matches.length > 0 && (
+            <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {matches.map((provider) => <ProviderCard key={provider._id} provider={provider} />)}
+            </div>
+          )}
         </div>
       </section>
 
@@ -165,6 +253,33 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* Patient feedback */}
+      {reviews.length > 0 && (
+        <section className="mx-auto max-w-6xl px-5 pb-20 sm:px-8">
+          <div className="flex items-end justify-between gap-5">
+            <div>
+              <p className="eyebrow">Patient voices</p>
+              <h2 className="mt-3 text-4xl sm:text-5xl">Trusted by people nearby</h2>
+            </div>
+            <span className="hidden text-sm text-subtle sm:block">Top-rated experiences</span>
+          </div>
+          <div className="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {reviews.map((review) => (
+              <article key={review._id} className="card flex flex-col p-6">
+                <Stars rating={review.rating} />
+                <p className="mt-5 flex-1 text-base leading-relaxed text-body">&ldquo;{review.comment || 'A great experience.'}&rdquo;</p>
+                <div className="mt-6 border-t border-line pt-4">
+                  <p className="text-sm font-medium text-ink">{review.patientName}</p>
+                  <Link to={`/provider/${review.provider._id}`} className="mt-1 block text-sm text-subtle hover:text-ink">
+                    {review.provider.name} · {review.provider.area}
+                  </Link>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* How it works */}
       <section className="mx-auto max-w-6xl px-5 pb-20 sm:px-8">

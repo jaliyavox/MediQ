@@ -10,7 +10,7 @@ const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$
 function signToken(admin) {
   return jwt.sign(
     { id: admin._id, kind: 'admin' },
-    process.env.JWT_SECRET,
+    process.env.ADMIN_JWT_SECRET || process.env.JWT_SECRET,
     { expiresIn: '8h' }
   );
 }

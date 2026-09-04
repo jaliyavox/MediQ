@@ -1,8 +1,15 @@
 // LOCKED FILE - shared by all four members. Tell the team before changing it.
 import axios from 'axios';
 
+const apiBaseUrl = import.meta.env.VITE_API_URL
+  || (import.meta.env.DEV ? 'http://localhost:5001/api' : undefined);
+
+if (!apiBaseUrl) {
+  throw new Error('VITE_API_URL must be configured for production builds.');
+}
+
 const client = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5001/api',
+  baseURL: apiBaseUrl,
 });
 
 // Attach the doctor's JWT to every request once they are logged in.

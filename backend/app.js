@@ -6,7 +6,17 @@ const mongoose = require('mongoose');
 
 const app = express();
 
-app.use(cors());
+const normalizeOrigin = (value) => value?.trim().replace(/\/+$/, '');
+const allowedOrigins = new Set([
+  'http://localhost:5173',
+  normalizeOrigin(process.env.FRONTEND_URL),
+].filter(Boolean));
+
+app.use(cors({
+  origin(origin, callback) {
+    callback(null, !origin || allowedOrigins.has(normalizeOrigin(origin)));
+  },
+}));
 app.use(express.json());
 
 // Health check - use this to confirm the API is up before debugging anything else.
