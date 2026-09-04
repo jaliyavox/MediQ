@@ -78,7 +78,7 @@ listing information.
 - **MongoDB Atlas** — free cluster
 - **Express.js** — REST API, one controller per resource
 - **React 19** (Vite) — React Router, Axios
-- **Node.js** — Express server, dotenv
+- **Node.js** — Express **5**, dotenv (note: Express 5 and Mongoose 9, not 4/8)
 - **Tailwind CSS v4** — via `@tailwindcss/vite`
 - **bcryptjs + jsonwebtoken** — doctor authentication
 
@@ -208,8 +208,9 @@ The booking form is the single most-graded screen in the app (requirements 4,
 returns them keyed by field name. You also own deployment and the Git history.
 
 ### Locked files — nobody edits alone
-`backend/server.js` · `frontend/src/App.jsx` · `frontend/src/api/client.js` ·
-`frontend/src/api/index.js` · `frontend/vite.config.js` · both `package.json`
+`backend/server.js` · `backend/app.js` · `frontend/src/App.jsx` ·
+`frontend/src/api/client.js` · `frontend/src/api/index.js` ·
+`frontend/vite.config.js` · both `package.json`
 
 All routes and all API helpers are already written in these, so you should not
 need to. If you genuinely do, say so in the group chat first — these are the
