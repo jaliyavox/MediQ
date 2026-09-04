@@ -1,19 +1,20 @@
-# Render blueprint for the MediQ API.
+# Render blueprint for MediQ - the API and the web app.
 # In Render: New > Blueprint > pick this repo. It reads this file.
-# MONGO_URI, JWT_SECRET and the ADMIN_* values are marked sync:false, so Render
-# prompts for them instead of ever storing them in the repository.
+#
+# Values marked `sync: false` are never stored in the repository; Render
+# prompts for them on the first deploy.
+
 services:
+  # ---------------------------------------------------------------- API
   - type: web
     name: mediq-api
     runtime: node
     plan: free
     rootDir: backend
-    buildCommand: npm install
+    buildCommand: npm ci
     startCommand: npm start
     healthCheckPath: /api/health
     envVars:
-      - key: NODE_VERSION
-        value: 24.13.1
       - key: MONGO_URI
         sync: false
       - key: JWT_SECRET
@@ -24,3 +25,25 @@ services:
         sync: false
       - key: ADMIN_PASSWORD
         sync: false
+
+  # ------------------------------------------------------------ web app
+  - type: web
+    name: mediq-web
+    runtime: static
+    rootDir: frontend
+    # --include=dev is required: vite, tailwindcss and @vitejs/plugin-react are
+    # devDependencies, and Render builds with NODE_ENV=production, which would
+    # otherwise omit them and fail with "vite: not found".
+    buildCommand: npm ci --include=dev && npm run build
+    staticPublishPath: dist
+    envVars:
+      # Must include the /api suffix - client.js appends /providers, /auth/login
+      # and so on to it. Set to https://mediq-api.onrender.com/api
+      - key: VITE_API_URL
+        sync: false
+    routes:
+      # Without this, every client-side route (/doctors, /provider/:id, /admin)
+      # 404s on direct load or refresh, because Render looks for a file there.
+      - type: rewrite
+        source: /*
+        destination: /index.html
