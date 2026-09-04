@@ -81,3 +81,38 @@ exports.getFilterOptions = async (req, res, next) => {
     next(err);
   }
 };
+
+// PATCH /api/providers/me
+exports.updateMyProfile = async (req, res, next) => {
+  try {
+    const provider = await Provider.findById(req.providerId);
+    if (!provider) return res.status(404).json({ message: 'Account not found.' });
+
+    const fields = ['name', 'email', 'area', 'district', 'contact', 'about'];
+    if (provider.role === 'doctor') fields.push('specialization', 'fee');
+    if (provider.role === 'pharmacy') fields.push('openHours');
+
+    fields.forEach((field) => {
+      if (Object.prototype.hasOwnProperty.call(req.body, field)) {
+        provider[field] = typeof req.body[field] === 'string'
+          ? req.body[field].trim()
+          : req.body[field];
+      }
+    });
+    if (Object.prototype.hasOwnProperty.call(req.body, 'email')) {
+      provider.email = provider.email.toLowerCase();
+    }
+    if (provider.role === 'doctor' && provider.fee === '') provider.fee = 0;
+
+    await provider.save();
+    res.json(provider);
+  } catch (err) {
+    if (err.code === 11000) {
+      return res.status(409).json({
+        message: 'That email is already registered.',
+        errors: { email: 'That email is already registered.' },
+      });
+    }
+    next(err);
+  }
+};

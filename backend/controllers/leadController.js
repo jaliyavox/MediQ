@@ -16,6 +16,7 @@ exports.createLead = async (req, res, next) => {
         errors: { medicineName: 'Please enter the medicine you need.' },
       });
     }
+    // A doctor enquiry is meaningless without naming the patient.
 
     const lead = await Lead.create({
       providerId,
@@ -24,6 +25,7 @@ exports.createLead = async (req, res, next) => {
       medicineName: medicineName?.trim(),
       note: note?.trim(),
     });
+    // Send back the lead and a message to display to the patient.
 
     res.status(201).json({
       lead,

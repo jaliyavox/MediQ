@@ -41,6 +41,9 @@ export const login = (body) => client.post('/auth/login', body).then((r) => r.da
 
 export const getMe = () => client.get('/auth/me').then((r) => r.data);
 
+export const updateMyProfile = (body) =>
+  client.patch('/providers/me', body).then((r) => r.data);
+
 // The logged-in provider's own inbox.
 export const getMyLeads = () => client.get('/leads/mine').then((r) => r.data);
 
