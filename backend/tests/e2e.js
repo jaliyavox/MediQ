@@ -77,6 +77,16 @@ const check = (name, ok, detail = '') => {
   check('partial specialization filter matches', r.data.length === 1);
   r = await req('GET', '/providers?role=doctor&area=Colombo');
   check('non-matching area returns empty list', r.data.length === 0);
+  // Regression: a regex metacharacter in the search box used to return a 500.
+  for (const bad of ['Dr(', '[', '*', '\\', '.*']) {
+    r = await req('GET', `/providers?role=doctor&q=${encodeURIComponent(bad)}`);
+    check(`search "${bad}" does not crash`, r.status === 200, `got ${r.status}`);
+  }
+  r = await req('GET', '/providers?role=doctor&q=.*');
+  check('".*" is treated as text, not a wildcard', r.data.length === 0, `matched ${r.data.length}`);
+  r = await req('GET', '/providers/notavalidid');
+  check('malformed provider id -> 404 not 500', r.status === 404, `got ${r.status}`);
+
   r = await req('GET', '/providers/meta/filters');
   check('filter options expose areas + specializations',
         r.data.areas.includes('Kandy') && r.data.specializations.includes('Cardiology'));

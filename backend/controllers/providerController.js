@@ -1,5 +1,11 @@
+const mongoose = require('mongoose');
 const Provider = require('../models/Provider');
 const Review = require('../models/Review');
+
+// A patient typing "Dr(" would otherwise be interpolated straight into a
+// RegExp and throw "Unterminated group", crashing the search with a 500.
+// Escape every regex metacharacter before building a pattern from user input.
+const escapeRegex = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 // Attaches avgRating + reviewCount to a set of providers in ONE query,
 // instead of a query per provider. Requirement 6's "calculate" lives here.
@@ -30,10 +36,10 @@ exports.listProviders = async (req, res, next) => {
     const filter = { status: 'approved' };
 
     if (role) filter.role = role;
-    if (area) filter.area = new RegExp(`^${area}$`, 'i');
-    if (district) filter.district = new RegExp(`^${district}$`, 'i');
-    if (specialization) filter.specialization = new RegExp(specialization, 'i');
-    if (q) filter.name = new RegExp(q, 'i');
+    if (area) filter.area = new RegExp(`^${escapeRegex(area)}$`, 'i');
+    if (district) filter.district = new RegExp(`^${escapeRegex(district)}$`, 'i');
+    if (specialization) filter.specialization = new RegExp(escapeRegex(specialization), 'i');
+    if (q) filter.name = new RegExp(escapeRegex(q), 'i');
 
     const providers = await Provider.find(filter).sort({ name: 1 });
     res.json(await withRatings(providers));
@@ -45,6 +51,11 @@ exports.listProviders = async (req, res, next) => {
 // GET /api/providers/:id
 exports.getProvider = async (req, res, next) => {
   try {
+    // A hand-typed or stale URL gives a malformed id; treat it as not-found
+    // rather than letting Mongoose throw a CastError into a 500.
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return res.status(404).json({ message: 'Not found.' });
+    }
     const provider = await Provider.findById(req.params.id);
     if (!provider) return res.status(404).json({ message: 'Not found.' });
 
