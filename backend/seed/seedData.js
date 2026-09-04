@@ -8,6 +8,7 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const { connectDatabase } = require('../config/database');
 
 const Provider = require('../models/Provider');
 const Lead = require('../models/Lead');
@@ -45,12 +46,7 @@ const comments = {
 };
 
 async function seed() {
-  if (!process.env.MONGO_URI) {
-    console.error('MONGO_URI is missing. Copy .env.example to .env and fill it in.');
-    process.exit(1);
-  }
-
-  await mongoose.connect(process.env.MONGO_URI);
+  await connectDatabase();
   console.log('Connected. Clearing old sample data...');
 
   await Promise.all([Provider.deleteMany({}), Lead.deleteMany({}), Review.deleteMany({})]);

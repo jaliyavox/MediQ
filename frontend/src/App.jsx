@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
@@ -12,13 +12,15 @@ import Register from './pages/Register';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import NotFound from './pages/NotFound';
+import Admin from './pages/Admin';
 
-export default function App() {
+function AppShell() {
+  const { pathname } = useLocation();
+  const isAdmin = pathname.startsWith('/admin');
+
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <div className="flex min-h-screen flex-col">
-          <Navbar />
+    <div className="flex min-h-screen flex-col">
+          {!isAdmin && <Navbar />}
           <main className="flex-1">
             <Routes>
               <Route path="/" element={<Home />} />
@@ -27,6 +29,7 @@ export default function App() {
               <Route path="/provider/:id" element={<ProviderDetail />} />
               <Route path="/register" element={<Register />} />
               <Route path="/login" element={<Login />} />
+              <Route path="/admin" element={<Admin />} />
               <Route
                 path="/dashboard"
                 element={
@@ -38,8 +41,16 @@ export default function App() {
               <Route path="*" element={<NotFound />} />
             </Routes>
           </main>
-          <Footer />
+          {!isAdmin && <Footer />}
         </div>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <BrowserRouter>
+        <AppShell />
       </BrowserRouter>
     </AuthProvider>
   );

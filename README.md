@@ -40,31 +40,63 @@ Node 24 · Express 5 · MongoDB Atlas (Mongoose 9) · bcryptjs · jsonwebtoken
 
 ## Running locally
 
+Requirements: Node.js 20.19 or newer (Node 24 recommended) and npm.
+
 ```bash
 git clone https://github.com/jaliyavox/MediQ.git
 cd MediQ
+npm run setup
 ```
 
-**Backend**
+`npm run setup` installs both apps and creates `backend/.env` and
+`frontend/.env.local` from their examples. Open `backend/.env` and replace
+`<password>` with the MongoDB password shared privately by the team. Never
+commit that file or post the password in GitHub or chat.
+
+Start both apps from the repository root:
 
 ```bash
-cd backend
-npm install
-cp .env.example .env        # fill in MONGO_URI and JWT_SECRET
-npm run seed                # 8 doctors, 8 pharmacies, reviews
-npm run dev                 # http://localhost:5001
+npm run dev
 ```
 
-Health check: <http://localhost:5001/api/health>
+- Frontend: <http://localhost:5173>
+- API health check: <http://localhost:5001/api/health>
 
-**Frontend**
+To run the apps separately, use two terminals from the repository root:
 
 ```bash
-cd frontend
-npm install
-cp .env.example .env.local
-npm run dev                 # http://localhost:5173
+npm run dev --prefix backend
+npm run dev --prefix frontend
 ```
+
+Seed data only when the team intends to replace the current database contents:
+
+```bash
+npm run seed --prefix backend
+```
+
+Create or reset the demo administrator account without changing provider data:
+
+```bash
+npm run seed:admin
+```
+
+Then open <http://localhost:5173/admin>. The local demo credentials come from
+`ADMIN_EMAIL` and `ADMIN_PASSWORD` in `backend/.env`. Set a private password of
+at least 12 characters before running the seed command; it is hashed before it
+is stored in MongoDB.
+
+### Startup troubleshooting
+
+- `MONGO_URI is missing`: run `npm run setup`, then edit `backend/.env`.
+- `querySrv ETIMEOUT` or `querySrv ECONNREFUSED`: keep
+  `DNS_SERVERS=8.8.8.8,1.1.1.1` in `backend/.env` and restart the backend.
+- Atlas connection timeout: add the member's current public IP under MongoDB
+  Atlas **Network Access**.
+- Vite or Mongoose engine error: upgrade Node.js to 20.19+; `node --version`
+  shows the installed version.
+- Run commands from the repository root. There is no need to open separate
+  `backend` and `frontend` folders for the normal development command.
 
 **Demo logins:** `nimal@mediq.demo` (doctor) · `senehasa@mediq.demo` (pharmacy)
 · both `mediq1234`

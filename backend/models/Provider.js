@@ -24,6 +24,9 @@ const providerSchema = new mongoose.Schema(
     openHours: { type: String, trim: true },
 
     status: { type: String, enum: ['pending', 'approved'], default: 'approved' },
+    isBanned: { type: Boolean, default: false },
+    banReason: { type: String, trim: true, maxlength: 300, default: '' },
+    bannedAt: { type: Date, default: null },
   },
   { timestamps: true }
 );

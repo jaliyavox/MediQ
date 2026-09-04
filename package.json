@@ -1,0 +1,21 @@
+{
+  "name": "mediq",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Run the MediQ frontend and backend from one terminal.",
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "scripts": {
+    "setup": "npm install && npm install --prefix backend && npm install --prefix frontend && node scripts/setup-env.js",
+    "dev": "concurrently --kill-others --names API,WEB --prefix-colors blue,green \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\"",
+    "start": "concurrently --kill-others --names API,WEB --prefix-colors blue,green \"npm start --prefix backend\" \"npm run dev --prefix frontend\"",
+    "seed:admin": "npm run seed:admin --prefix backend",
+    "build": "npm run build --prefix frontend",
+    "test": "npm test --prefix backend",
+    "lint": "npm run lint --prefix frontend"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

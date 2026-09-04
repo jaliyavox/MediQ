@@ -48,3 +48,32 @@ export const updateLeadStatus = (id, status) =>
   client.patch(`/leads/${id}`, { status }).then((r) => r.data);
 
 export const getMyReviews = () => client.get('/reviews/mine').then((r) => r.data);
+
+/* ---------------- Admin panel ---------------- */
+
+const adminHeaders = (token) => ({ headers: { Authorization: `Bearer ${token}` } });
+
+export const adminLogin = (body) =>
+  client.post('/admin/login', body).then((r) => r.data);
+
+export const getAdminMe = (token) =>
+  client.get('/admin/me', adminHeaders(token)).then((r) => r.data);
+
+export const getAdminProviders = (token) =>
+  client.get('/admin/providers', adminHeaders(token)).then((r) => r.data);
+
+export const getAdminReviews = (token, providerId) =>
+  client.get('/admin/reviews', {
+    ...adminHeaders(token),
+    params: providerId ? { providerId } : {},
+  }).then((r) => r.data);
+
+export const setProviderBan = (token, providerId, banned, reason = '') =>
+  client.patch(
+    `/admin/providers/${providerId}/ban`,
+    { banned, reason },
+    adminHeaders(token)
+  ).then((r) => r.data);
+
+export const deleteAdminReview = (token, reviewId) =>
+  client.delete(`/admin/reviews/${reviewId}`, adminHeaders(token)).then((r) => r.data);

@@ -56,6 +56,9 @@ exports.login = async (req, res, next) => {
 
     const ok = await bcrypt.compare(password, provider.passwordHash);
     if (!ok) return reject();
+    if (provider.isBanned) {
+      return res.status(403).json({ message: 'This account has been suspended by an administrator.' });
+    }
 
     res.json({ token: signToken(provider), provider });
   } catch (err) {
