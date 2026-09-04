@@ -15,6 +15,11 @@ services:
     startCommand: npm start
     healthCheckPath: /api/health
     envVars:
+      # app.js allows only localhost:5173 and this origin. Without it the
+      # deployed site loads but every API call is blocked by the browser.
+      # Set it to the mediq-web URL, with no trailing slash.
+      - key: FRONTEND_URL
+        sync: false
       - key: MONGO_URI
         sync: false
       - key: JWT_SECRET

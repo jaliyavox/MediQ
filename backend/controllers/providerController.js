@@ -70,6 +70,25 @@ exports.getProvider = async (req, res, next) => {
   }
 };
 
+// Providers type their own area, so "Colombo" and "colombo" both end up in the
+// database and the dropdown shows the same place twice. Collapse them
+// case-insensitively, keeping the capitalised spelling where one exists.
+function dedupeLabels(values) {
+  const byKey = new Map();
+  for (const raw of values) {
+    if (!raw) continue;
+    const value = raw.trim();
+    if (!value) continue;
+    const key = value.toLowerCase();
+    const existing = byKey.get(key);
+    // Prefer a variant that is not entirely lowercase, e.g. "Colombo" over "colombo".
+    if (!existing || (existing === existing.toLowerCase() && value !== value.toLowerCase())) {
+      byKey.set(key, value);
+    }
+  }
+  return [...byKey.values()].sort((a, b) => a.localeCompare(b));
+}
+
 // GET /api/providers/meta/areas - powers the area dropdown without hardcoding
 exports.getFilterOptions = async (req, res, next) => {
   try {
@@ -80,8 +99,8 @@ exports.getFilterOptions = async (req, res, next) => {
       }),
     ]);
     res.json({
-      areas: areas.filter(Boolean).sort(),
-      specializations: specializations.filter(Boolean).sort(),
+      areas: dedupeLabels(areas),
+      specializations: dedupeLabels(specializations),
     });
   } catch (err) {
     next(err);
