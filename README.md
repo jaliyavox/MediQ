@@ -24,7 +24,9 @@ easily take time off work.
 - See fees or opening hours, contact numbers, and what other patients said
 - Send a consultation request to a doctor
 - Send a medicine enquiry to a pharmacy
+
 - Leave a star rating and comment
+
 
 **As a doctor or pharmacy**
 - Register and get listed, with your area, fee or opening hours

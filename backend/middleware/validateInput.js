@@ -91,4 +91,32 @@ function validateReview(req, res, next) {
   next();
 }
 
-module.exports = { validateRegistration, validateLogin, validateLead, validateReview };
+function validateProviderUpdate(req, res, next) {
+  const { name, email, area, contact, about, fee } = req.body;
+  const errors = {};
+  const has = (field) => Object.prototype.hasOwnProperty.call(req.body, field);
+
+  if (has('name') && (!name || !name.trim())) errors.name = 'Please enter a name.';
+  else if (has('name') && name.trim().length < 3) errors.name = 'Name must be at least 3 characters.';
+
+  if (has('email') && (!email || !email.trim())) errors.email = 'Please enter an email address.';
+  else if (has('email') && !EMAIL.test(email.trim())) errors.email = 'Enter a valid email address.';
+
+  if (has('area') && (!area || !area.trim())) errors.area = 'Please enter your area.';
+  if (has('contact') && contact && !SL_PHONE.test(contact.trim())) {
+    errors.contact = 'Enter a valid 10-digit number starting with 0.';
+  }
+  if (has('about') && about && about.trim().length > 400) {
+    errors.about = 'About must be 400 characters or fewer.';
+  }
+  if (has('fee') && fee !== '' && (isNaN(Number(fee)) || Number(fee) < 0)) {
+    errors.fee = 'Fee must be a positive number.';
+  }
+
+  if (Object.keys(errors).length > 0) return fail(res, errors);
+  next();
+}
+
+module.exports = {
+  validateRegistration, validateLogin, validateLead, validateReview, validateProviderUpdate,
+};

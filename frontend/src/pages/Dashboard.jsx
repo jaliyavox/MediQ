@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { getMyLeads, getMyReviews, updateLeadStatus } from '../api';
+import { getMyLeads, getMyReviews, updateLeadStatus, updateMyProfile } from '../api';
 import { useAuth } from '../context/AuthContext';
-import Stars from '../components/Stars';
+import Field from '../components/Field';
 
 const STATUS = {
   new: 'bg-accent-soft text-accent',
@@ -9,12 +9,23 @@ const STATUS = {
   closed: 'bg-muted text-subtle line-through',
 };
 
+const profileFrom = (provider) => ({
+  name: provider.name || '', email: provider.email || '', area: provider.area || '',
+  district: provider.district || '', contact: provider.contact || '', about: provider.about || '',
+  specialization: provider.specialization || '', fee: provider.fee ?? '', openHours: provider.openHours || '',
+});
+
 export default function Dashboard() {
-  const { provider } = useAuth();
+  const { provider, updateProvider } = useAuth();
   const [leads, setLeads] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState(() => profileFrom(provider));
+  const [profileErrors, setProfileErrors] = useState({});
+  const [profileMessage, setProfileMessage] = useState('');
+  const [savingProfile, setSavingProfile] = useState(false);
 
   useEffect(() => {
     Promise.all([getMyLeads(), getMyReviews()])
@@ -36,6 +47,25 @@ export default function Dashboard() {
     }
   };
 
+  const setProfileField = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+
+  const saveProfile = async (e) => {
+    e.preventDefault();
+    setProfileErrors({}); setProfileMessage(''); setSavingProfile(true);
+    try {
+      const updated = await updateMyProfile(form);
+      updateProvider(updated);
+      setForm(profileFrom(updated));
+      setEditing(false);
+      setProfileMessage('Profile updated.');
+    } catch (err) {
+      setProfileErrors(err.errors || {});
+      setProfileMessage(err.message);
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
   const avg = reviews.length
     ? Math.round((reviews.reduce((s, r) => s + r.rating, 0) / reviews.length) * 10) / 10
     : null;
@@ -49,7 +79,61 @@ export default function Dashboard() {
       <p className="eyebrow">
         {provider.role === 'doctor' ? provider.specialization : 'Pharmacy'} · {provider.area}
       </p>
-      <h1 className="mt-3 text-5xl sm:text-6xl">{provider.name}</h1>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <h1 className="mt-3 text-5xl sm:text-6xl">{provider.name}</h1>
+        <button
+          type="button"
+          className="btn-secondary mt-4"
+          onClick={() => {
+            setForm(profileFrom(provider));
+            setProfileErrors({});
+            setProfileMessage('');
+            setEditing(!editing);
+          }}
+        >
+          {editing ? 'Cancel' : 'Edit profile'}
+        </button>
+      </div>
+
+      {profileMessage && !Object.keys(profileErrors).length && (
+        <p className="mt-4 rounded-xl bg-accent-soft px-4 py-3 text-sm text-accent">{profileMessage}</p>
+      )}
+
+      {editing && (
+        <form onSubmit={saveProfile} noValidate className="card mt-8 space-y-4 p-7">
+          {profileMessage && Object.keys(profileErrors).length > 0 && (
+            <p className="rounded-xl bg-danger-soft px-4 py-3 text-sm text-danger">{profileMessage}</p>
+          )}
+          <Field label={provider.role === 'doctor' ? 'Full name' : 'Pharmacy name'} name="name"
+                 value={form.name} onChange={setProfileField} error={profileErrors.name} />
+          <Field label="Email" name="email" type="email" value={form.email}
+                 onChange={setProfileField} error={profileErrors.email} />
+          {provider.role === 'doctor' ? (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Specialization" name="specialization" value={form.specialization}
+                     onChange={setProfileField} error={profileErrors.specialization} />
+              <Field label="Consultation fee" hint="Rs." name="fee" type="number" min="0"
+                     value={form.fee} onChange={setProfileField} error={profileErrors.fee} />
+            </div>
+          ) : (
+            <Field label="Opening hours" name="openHours" value={form.openHours}
+                   onChange={setProfileField} error={profileErrors.openHours} />
+          )}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Area" name="area" value={form.area} onChange={setProfileField}
+                   error={profileErrors.area} />
+            <Field label="District" hint="optional" name="district" value={form.district}
+                   onChange={setProfileField} error={profileErrors.district} />
+          </div>
+          <Field label="Contact number" hint="optional" name="contact" value={form.contact}
+                 onChange={setProfileField} error={profileErrors.contact} inputMode="tel" />
+          <Field as="textarea" rows={3} label="About" hint="optional" name="about"
+                 value={form.about} onChange={setProfileField} error={profileErrors.about} />
+          <button type="submit" disabled={savingProfile} className="btn-primary w-full">
+            {savingProfile ? 'Saving…' : 'Save profile'}
+          </button>
+        </form>
+      )}
 
       {error && (
         <p className="mt-6 rounded-xl bg-danger-soft px-4 py-3 text-sm text-danger">{error}</p>
