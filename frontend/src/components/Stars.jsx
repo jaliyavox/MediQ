@@ -1,17 +1,20 @@
-// Read-only star display. Pass rating=null for "no reviews yet".
-export default function Stars({ rating, count }) {
+// Read-only rating display. rating === null means "no reviews yet".
+export default function Stars({ rating, count, size = 'sm' }) {
   if (rating == null) {
-    return <span className="text-xs text-slate-400">No reviews yet</span>;
+    return <span className="text-xs text-subtle">No reviews yet</span>;
   }
+
   const full = Math.round(rating);
+  const text = size === 'lg' ? 'text-base' : 'text-sm';
+
   return (
-    <span className="inline-flex items-center gap-1 text-sm">
-      <span className="text-amber-500" aria-hidden="true">
+    <span className={`inline-flex items-center gap-1.5 ${text}`}>
+      <span className="tracking-tight text-accent" aria-hidden="true">
         {'★'.repeat(full)}
-        <span className="text-slate-300">{'★'.repeat(5 - full)}</span>
+        <span className="text-line">{'★'.repeat(5 - full)}</span>
       </span>
-      <span className="font-medium text-slate-700">{rating.toFixed(1)}</span>
-      <span className="text-xs text-slate-500">({count})</span>
+      <span className="font-medium text-ink">{rating.toFixed(1)}</span>
+      {count != null && <span className="text-xs text-subtle">({count})</span>}
     </span>
   );
 }

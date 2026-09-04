@@ -10,34 +10,36 @@ export default function LeadForm({ provider }) {
 
   const [form, setForm] = useState(empty);
   const [errors, setErrors] = useState({});
-  const [status, setStatus] = useState(null); // 'sending' | 'sent'
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState('');
   const [banner, setBanner] = useState('');
 
   const set = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
   const submit = async (e) => {
     e.preventDefault();
-    setErrors({});
-    setBanner('');
-    setStatus('sending');
+    setErrors({}); setBanner(''); setSending(true);
     try {
       const res = await createLead({ providerId: provider._id, ...form });
       setForm(empty);
-      setStatus('sent');
-      setBanner(res.message);
+      setSent(res.message);
     } catch (err) {
       setErrors(err.errors || {});
       setBanner(err.message);
-      setStatus(null);
+    } finally {
+      setSending(false);
     }
   };
 
-  if (status === 'sent') {
+  if (sent) {
     return (
-      <div className="rounded-xl border border-teal-200 bg-teal-50 p-4">
-        <p className="font-medium text-teal-900">Request sent</p>
-        <p className="mt-1 text-sm text-teal-800">{banner}</p>
-        <button onClick={() => setStatus(null)} className="mt-3 text-sm text-teal-700 underline">
+      <div className="card p-6 text-center">
+        <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-accent-soft text-accent">
+          ✓
+        </span>
+        <h4 className="mt-4 text-lg">Request sent</h4>
+        <p className="mt-2 text-sm leading-relaxed text-body">{sent}</p>
+        <button onClick={() => setSent('')} className="btn-quiet mt-5">
           Send another
         </button>
       </div>
@@ -45,13 +47,18 @@ export default function LeadForm({ provider }) {
   }
 
   return (
-    <form onSubmit={submit} noValidate className="space-y-3 rounded-xl border border-slate-200 bg-white p-4">
-      <h3 className="font-semibold text-slate-900">
-        {isPharmacy ? 'Ask if they have your medicine' : 'Request a consultation'}
-      </h3>
+    <form onSubmit={submit} noValidate className="card space-y-4 p-6">
+      <div>
+        <h4 className="text-lg">
+          {isPharmacy ? 'Ask about a medicine' : 'Request a consultation'}
+        </h4>
+        <p className="mt-1 text-sm text-subtle">
+          {provider.name} will call you back.
+        </p>
+      </div>
 
       {banner && !Object.keys(errors).length && (
-        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{banner}</p>
+        <p className="rounded-xl bg-danger-soft px-4 py-3 text-sm text-danger">{banner}</p>
       )}
 
       <Field label="Your name" name="patientName" value={form.patientName}
@@ -65,18 +72,16 @@ export default function LeadForm({ provider }) {
                onChange={set} error={errors.medicineName} placeholder="Paracetamol 500mg" />
       )}
 
-      <Field as="textarea" rows={3} label="Note (optional)" name="note" value={form.note}
-             onChange={set} error={errors.note}
-             placeholder={isPharmacy ? 'Quantity, or anything else they should know' : 'Briefly, what do you need help with?'} />
+      <Field as="textarea" rows={3} label="Note" hint="optional" name="note"
+             value={form.note} onChange={set} error={errors.note}
+             placeholder={isPharmacy ? 'Quantity, or anything else they should know'
+                                     : 'Briefly, what do you need help with?'} />
 
-      <button
-        type="submit"
-        disabled={status === 'sending'}
-        className="w-full rounded-lg bg-teal-700 px-4 py-2 font-medium text-white hover:bg-teal-800 disabled:opacity-60"
-      >
-        {status === 'sending' ? 'Sending...' : 'Send request'}
+      <button type="submit" disabled={sending} className="btn-primary w-full">
+        {sending ? 'Sending…' : 'Send request'}
       </button>
-      <p className="text-xs text-slate-500">
+
+      <p className="text-xs leading-relaxed text-subtle">
         Your name and number are shared only with {provider.name}.
       </p>
     </form>

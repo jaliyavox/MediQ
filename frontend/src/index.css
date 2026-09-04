@@ -1,3 +1,104 @@
 @import "tailwindcss";
 
-/* OWNER: Member B - global styles and design tokens go here. */
+/* OWNER: Member B - the design system. Change colours and type here, not in
+   individual components, so the whole app stays consistent. */
+
+@theme {
+  /* Type: a high-contrast serif for display, a neutral sans for everything else. */
+  --font-display: "Instrument Serif", "Iowan Old Style", Georgia, serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+
+  /* Ink and paper */
+  --color-ink: #131313;        /* headings, primary buttons */
+  --color-body: #5c5c58;       /* body copy */
+  --color-subtle: #8a8a84;     /* captions, meta */
+  --color-canvas: #fbfbf9;     /* page background */
+  --color-surface: #ffffff;    /* cards */
+  --color-muted: #f3f3f0;      /* stat tiles, quiet fills */
+  --color-line: #e7e7e2;       /* hairlines */
+
+  /* One accent, used sparingly */
+  --color-accent: #2f6b55;
+  --color-accent-soft: #dcece4;
+
+  --color-danger: #b3261e;
+  --color-danger-soft: #fdf0ef;
+
+  --radius-card: 1.25rem;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-canvas);
+    color: var(--color-body);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3 {
+    color: var(--color-ink);
+    font-family: var(--font-display);
+    font-weight: 400;
+    letter-spacing: -0.015em;
+    line-height: 1.05;
+  }
+
+  /* The serif carries the display sizes; small headings read better as sans. */
+  h4, h5, h6 {
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-weight: 600;
+  }
+
+  ::selection {
+    background: var(--color-accent-soft);
+    color: var(--color-ink);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  /* Pill buttons, as in the reference: solid ink primary, outlined secondary.
+     Tailwind v4 will not let @apply reference another custom class, so the
+     shared button styles are repeated rather than composed from a .btn base. */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-ink
+           px-6 py-3 text-sm font-medium text-white transition
+           hover:bg-black disabled:opacity-50;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-full border
+           border-ink/25 px-6 py-3 text-sm font-medium text-ink transition
+           hover:border-ink/60 disabled:opacity-50;
+  }
+  .btn-quiet {
+    @apply inline-flex items-center justify-center gap-2 rounded-full border
+           border-line bg-surface px-5 py-2.5 text-sm font-medium text-body
+           transition hover:text-ink disabled:opacity-50;
+  }
+
+  .card {
+    @apply rounded-card border border-line bg-surface;
+  }
+
+  .tile {
+    @apply rounded-card bg-muted p-8 text-center;
+  }
+
+  .eyebrow {
+    @apply text-xs font-medium uppercase tracking-[0.14em] text-subtle;
+  }
+
+  .input {
+    @apply w-full rounded-xl border border-line bg-surface px-4 py-2.5 text-sm
+           text-ink transition placeholder:text-subtle
+           focus:border-accent focus:outline-none;
+  }
+  .input-error {
+    @apply border-danger bg-danger-soft;
+  }
+}

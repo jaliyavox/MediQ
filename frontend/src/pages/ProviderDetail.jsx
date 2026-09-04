@@ -20,71 +20,82 @@ export default function ProviderDetail() {
 
   if (error) {
     return (
-      <div className="rounded-xl border border-red-200 bg-red-50 p-4">
-        <p className="font-medium text-red-800">{error}</p>
-        <Link to="/doctors" className="mt-2 inline-block text-sm text-teal-700 underline">
-          Back to listings
-        </Link>
-      </div>
+      <section className="mx-auto max-w-6xl px-5 py-32 text-center sm:px-8">
+        <h1 className="text-4xl">{error}</h1>
+        <Link to="/doctors" className="btn-quiet mt-6">Back to listings</Link>
+      </section>
     );
   }
 
-  if (!provider) return <p className="text-slate-500">Loading...</p>;
+  if (!provider) {
+    return <p className="mx-auto max-w-6xl px-5 py-32 text-center text-subtle sm:px-8">Loading…</p>;
+  }
 
   const isDoctor = provider.role === 'doctor';
+  const facts = [
+    ['Area', [provider.area, provider.district].filter(Boolean).join(', ')],
+    ['Contact', provider.contact],
+    isDoctor
+      ? ['Consultation fee', provider.fee > 0 ? `Rs. ${provider.fee.toLocaleString()}` : null]
+      : ['Open', provider.openHours],
+  ].filter(([, v]) => v);
 
   return (
-    <section className="grid gap-6 lg:grid-cols-[1.2fr_1fr]">
-      <div>
-        <Link to={isDoctor ? '/doctors' : '/pharmacies'} className="text-sm text-teal-700 underline">
-          &larr; Back to {isDoctor ? 'doctors' : 'pharmacies'}
-        </Link>
+    <section className="mx-auto max-w-6xl px-5 py-14 sm:px-8">
+      <Link to={isDoctor ? '/doctors' : '/pharmacies'}
+            className="text-sm text-body underline underline-offset-4 hover:text-ink">
+        &larr; All {isDoctor ? 'doctors' : 'pharmacies'}
+      </Link>
 
-        <h1 className="mt-3 text-2xl font-bold text-slate-900">{provider.name}</h1>
-        <p className="text-teal-700">{isDoctor ? provider.specialization : 'Pharmacy'}</p>
+      <div className="mt-8 grid gap-12 lg:grid-cols-[1.1fr_0.9fr]">
+        <div>
+          <p className="eyebrow">{isDoctor ? provider.specialization : 'Pharmacy'}</p>
+          <h1 className="mt-3 text-5xl sm:text-6xl">{provider.name}</h1>
 
-        <div className="mt-2">
-          <Stars rating={provider.avgRating} count={provider.reviewCount} />
+          <div className="mt-4">
+            <Stars rating={provider.avgRating} count={provider.reviewCount} size="lg" />
+          </div>
+
+          {provider.about && (
+            <p className="mt-6 max-w-lg text-lg leading-relaxed text-body">{provider.about}</p>
+          )}
+
+          <dl className="mt-8 grid gap-px overflow-hidden rounded-card border border-line bg-line sm:grid-cols-3">
+            {facts.map(([k, v]) => (
+              <div key={k} className="bg-surface p-5">
+                <dt className="eyebrow">{k}</dt>
+                <dd className="mt-2 text-ink">{v}</dd>
+              </div>
+            ))}
+          </dl>
+
+          <h2 className="mt-14 text-3xl">
+            Reviews {reviews.length > 0 && <span className="text-subtle">({reviews.length})</span>}
+          </h2>
+
+          {reviews.length === 0 ? (
+            <p className="mt-4 text-body">No reviews yet. Be the first to leave one.</p>
+          ) : (
+            <ul className="mt-6 space-y-px overflow-hidden rounded-card border border-line bg-line">
+              {reviews.map((r) => (
+                <li key={r._id} className="bg-surface p-5">
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="font-medium text-ink">{r.patientName}</span>
+                    <span className="text-sm text-accent" aria-label={`${r.rating} out of 5`}>
+                      {'★'.repeat(r.rating)}<span className="text-line">{'★'.repeat(5 - r.rating)}</span>
+                    </span>
+                  </div>
+                  {r.comment && <p className="mt-2 text-sm leading-relaxed text-body">{r.comment}</p>}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
 
-        <dl className="mt-4 grid gap-2 text-sm sm:grid-cols-2">
-          <div><dt className="text-slate-500">Area</dt><dd className="text-slate-900">{provider.area}{provider.district && `, ${provider.district}`}</dd></div>
-          {provider.contact && <div><dt className="text-slate-500">Contact</dt><dd className="text-slate-900">{provider.contact}</dd></div>}
-          {isDoctor && provider.fee > 0 && <div><dt className="text-slate-500">Consultation fee</dt><dd className="text-slate-900">Rs. {provider.fee.toLocaleString()}</dd></div>}
-          {!isDoctor && provider.openHours && <div><dt className="text-slate-500">Open</dt><dd className="text-slate-900">{provider.openHours}</dd></div>}
-        </dl>
-
-        {provider.about && <p className="mt-4 text-slate-600">{provider.about}</p>}
-
-        <h2 className="mt-8 text-lg font-semibold text-slate-900">
-          Reviews {reviews.length > 0 && <span className="text-slate-400">({reviews.length})</span>}
-        </h2>
-
-        {reviews.length === 0 ? (
-          <p className="mt-2 text-sm text-slate-500">
-            No reviews yet. Be the first to leave one.
-          </p>
-        ) : (
-          <ul className="mt-3 space-y-3">
-            {reviews.map((r) => (
-              <li key={r._id} className="rounded-xl border border-slate-200 bg-white p-3">
-                <div className="flex items-center justify-between">
-                  <span className="font-medium text-slate-800">{r.patientName}</span>
-                  <span className="text-amber-500" aria-label={`${r.rating} out of 5`}>
-                    {'★'.repeat(r.rating)}
-                    <span className="text-slate-300">{'★'.repeat(5 - r.rating)}</span>
-                  </span>
-                </div>
-                {r.comment && <p className="mt-1 text-sm text-slate-600">{r.comment}</p>}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-
-      <div className="space-y-4">
-        <LeadForm provider={provider} />
-        <ReviewForm providerId={provider._id} onAdded={load} />
+        <div className="space-y-4 lg:sticky lg:top-24 lg:self-start">
+          <LeadForm provider={provider} />
+          <ReviewForm providerId={provider._id} onAdded={load} />
+        </div>
       </div>
     </section>
   );

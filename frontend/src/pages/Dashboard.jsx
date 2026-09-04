@@ -3,10 +3,10 @@ import { getMyLeads, getMyReviews, updateLeadStatus } from '../api';
 import { useAuth } from '../context/AuthContext';
 import Stars from '../components/Stars';
 
-const STATUS_STYLES = {
-  new: 'bg-teal-100 text-teal-800',
-  contacted: 'bg-amber-100 text-amber-800',
-  closed: 'bg-slate-200 text-slate-600',
+const STATUS = {
+  new: 'bg-accent-soft text-accent',
+  contacted: 'bg-muted text-body',
+  closed: 'bg-muted text-subtle line-through',
 };
 
 export default function Dashboard() {
@@ -23,8 +23,11 @@ export default function Dashboard() {
       .finally(() => setLoading(false));
   }, []);
 
+  // Cycles new -> contacted -> closed -> new, so the whole flow is demoable
+  // from one control without building a separate edit screen.
   const advance = async (lead) => {
-    const next = lead.status === 'new' ? 'contacted' : lead.status === 'contacted' ? 'closed' : 'new';
+    const next = lead.status === 'new' ? 'contacted'
+               : lead.status === 'contacted' ? 'closed' : 'new';
     try {
       const updated = await updateLeadStatus(lead._id, next);
       setLeads((prev) => prev.map((l) => (l._id === updated._id ? updated : l)));
@@ -37,66 +40,75 @@ export default function Dashboard() {
     ? Math.round((reviews.reduce((s, r) => s + r.rating, 0) / reviews.length) * 10) / 10
     : null;
 
-  if (loading) return <p className="text-slate-500">Loading...</p>;
+  if (loading) {
+    return <p className="mx-auto max-w-6xl px-5 py-32 text-center text-subtle sm:px-8">Loading…</p>;
+  }
 
   return (
-    <section>
-      <h1 className="text-2xl font-bold text-slate-900">{provider.name}</h1>
-      <p className="mt-1 text-slate-600">
-        {provider.role === 'doctor' ? provider.specialization : 'Pharmacy'} &middot; {provider.area}
+    <section className="mx-auto max-w-6xl px-5 py-14 sm:px-8">
+      <p className="eyebrow">
+        {provider.role === 'doctor' ? provider.specialization : 'Pharmacy'} · {provider.area}
       </p>
+      <h1 className="mt-3 text-5xl sm:text-6xl">{provider.name}</h1>
 
-      {error && <p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      {error && (
+        <p className="mt-6 rounded-xl bg-danger-soft px-4 py-3 text-sm text-danger">{error}</p>
+      )}
 
-      <div className="mt-5 grid gap-3 sm:grid-cols-3">
-        <div className="rounded-xl border border-slate-200 bg-white p-4">
-          <p className="text-2xl font-bold text-slate-900">{leads.length}</p>
-          <p className="text-sm text-slate-600">Total requests</p>
+      <div className="mt-10 grid gap-4 sm:grid-cols-3">
+        <div className="tile">
+          <p className="font-display text-5xl text-ink">{leads.length}</p>
+          <p className="eyebrow mt-2">Total requests</p>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-4">
-          <p className="text-2xl font-bold text-teal-700">{leads.filter((l) => l.status === 'new').length}</p>
-          <p className="text-sm text-slate-600">New, not yet contacted</p>
+        <div className="tile">
+          <p className="font-display text-5xl text-accent">
+            {leads.filter((l) => l.status === 'new').length}
+          </p>
+          <p className="eyebrow mt-2">Not yet contacted</p>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-4">
-          <div className="text-2xl font-bold text-slate-900">
-            <Stars rating={avg} count={reviews.length} />
-          </div>
-          <p className="text-sm text-slate-600">Average rating</p>
+        <div className="tile">
+          <p className="font-display text-5xl text-ink">{avg ?? '—'}</p>
+          <p className="eyebrow mt-2">Average rating</p>
         </div>
       </div>
 
-      <h2 className="mt-8 text-lg font-semibold text-slate-900">Patient requests</h2>
+      <h2 className="mt-16 text-3xl">Patient requests</h2>
       {leads.length === 0 ? (
-        <p className="mt-2 rounded-xl border border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-600">
-          No requests yet. They will appear here as soon as a patient contacts you.
-        </p>
+        <div className="mt-6 rounded-card border border-line bg-muted px-8 py-16 text-center">
+          <p className="font-display text-2xl text-ink">Nothing yet</p>
+          <p className="mt-2 text-body">
+            Requests appear here as soon as a patient contacts you.
+          </p>
+        </div>
       ) : (
-        <ul className="mt-3 space-y-3">
+        <ul className="mt-6 space-y-px overflow-hidden rounded-card border border-line bg-line">
           {leads.map((lead) => (
-            <li key={lead._id} className="rounded-xl border border-slate-200 bg-white p-4">
-              <div className="flex flex-wrap items-start justify-between gap-2">
+            <li key={lead._id} className="bg-surface p-6">
+              <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <p className="font-medium text-slate-900">{lead.patientName}</p>
-                  <a href={`tel:${lead.contactNumber}`} className="text-sm text-teal-700 underline">
+                  <p className="text-lg text-ink">{lead.patientName}</p>
+                  <a href={`tel:${lead.contactNumber}`}
+                     className="text-sm text-body underline underline-offset-4 hover:text-ink">
                     {lead.contactNumber}
                   </a>
                 </div>
                 <button
                   onClick={() => advance(lead)}
-                  className={`rounded-full px-2.5 py-1 text-xs font-medium ${STATUS_STYLES[lead.status]}`}
+                  className={`rounded-full px-3 py-1 text-xs font-medium transition ${STATUS[lead.status]}`}
                   title="Click to change status"
                 >
                   {lead.status}
                 </button>
               </div>
+
               {lead.medicineName && (
-                <p className="mt-2 text-sm">
-                  <span className="text-slate-500">Medicine: </span>
-                  <span className="font-medium text-slate-800">{lead.medicineName}</span>
+                <p className="mt-3 text-sm">
+                  <span className="text-subtle">Medicine · </span>
+                  <span className="text-ink">{lead.medicineName}</span>
                 </p>
               )}
-              {lead.note && <p className="mt-1 text-sm text-slate-600">{lead.note}</p>}
-              <p className="mt-2 text-xs text-slate-400">
+              {lead.note && <p className="mt-2 text-sm leading-relaxed text-body">{lead.note}</p>}
+              <p className="mt-3 text-xs text-subtle">
                 {new Date(lead.createdAt).toLocaleString()}
               </p>
             </li>
@@ -104,20 +116,22 @@ export default function Dashboard() {
         </ul>
       )}
 
-      <h2 className="mt-8 text-lg font-semibold text-slate-900">Your reviews</h2>
+      <h2 className="mt-16 text-3xl">
+        Your reviews {reviews.length > 0 && <span className="text-subtle">({reviews.length})</span>}
+      </h2>
       {reviews.length === 0 ? (
-        <p className="mt-2 text-sm text-slate-500">No reviews yet.</p>
+        <p className="mt-4 text-body">No reviews yet.</p>
       ) : (
-        <ul className="mt-3 space-y-3">
+        <ul className="mt-6 space-y-px overflow-hidden rounded-card border border-line bg-line">
           {reviews.map((r) => (
-            <li key={r._id} className="rounded-xl border border-slate-200 bg-white p-3">
-              <div className="flex items-center justify-between">
-                <span className="font-medium text-slate-800">{r.patientName}</span>
-                <span className="text-amber-500">
-                  {'★'.repeat(r.rating)}<span className="text-slate-300">{'★'.repeat(5 - r.rating)}</span>
+            <li key={r._id} className="bg-surface p-5">
+              <div className="flex items-center justify-between gap-4">
+                <span className="font-medium text-ink">{r.patientName}</span>
+                <span className="text-sm text-accent">
+                  {'★'.repeat(r.rating)}<span className="text-line">{'★'.repeat(5 - r.rating)}</span>
                 </span>
               </div>
-              {r.comment && <p className="mt-1 text-sm text-slate-600">{r.comment}</p>}
+              {r.comment && <p className="mt-2 text-sm leading-relaxed text-body">{r.comment}</p>}
             </li>
           ))}
         </ul>

@@ -94,85 +94,95 @@ git checkout -b feat/your-part
 
 ---
 
+## Component ownership at a glance
+
+Every file in the app belongs to exactly one member. Stay inside your column and
+you will not hit a merge conflict.
+
+| | Member A | Member B | Member C | Member D |
+|---|---|---|---|---|
+| **Theme** | Accounts | Design system | Search | Forms & ship |
+| **Branch** | `feat/accounts` | `feat/ui-shell` | `feat/directory` | `feat/contact-reviews` |
+| **Backend** | `authController.js`<br>`middleware/auth.js` | — | `providerController.js` | `leadController.js`<br>`reviewController.js`<br>`validateInput.js`<br>`seed/seedData.js`<br>`tests/e2e.js` |
+| **Pages** | `Register.jsx`<br>`Login.jsx`<br>`Dashboard.jsx` | `Home.jsx`<br>`NotFound.jsx` | `Directory.jsx`<br>`Doctors.jsx`<br>`Pharmacies.jsx` | `ProviderDetail.jsx` |
+| **Components** | `ProtectedRoute.jsx`<br>`AuthContext.jsx` | `Navbar.jsx`<br>`Footer.jsx`<br>`Field.jsx`<br>`Stars.jsx`<br>`index.css` | `SearchBar.jsx`<br>`ProviderCard.jsx` | `LeadForm.jsx`<br>`ReviewForm.jsx` |
+| **Owns requirement** | 8 (navigation/auth) | 1, 2, 7 (UI + responsive) | 6 (search/filter/calculate) | 4, 5, 10 (forms + demo) |
+
+**Locked — nobody edits alone:** `backend/server.js` · `backend/app.js` ·
+`backend/models/*` · `frontend/src/App.jsx` · `frontend/src/api/*` ·
+`frontend/vite.config.js` · `index.html` · both `package.json`
+
+---
+
 ## Member A — Accounts and dashboard
 
-**Branch:** `feat/accounts`
+**Branch:** `feat/accounts` · **Requirement 8**
 
-**Your files:** `backend/controllers/authController.js` ·
-`backend/middleware/auth.js` · auth half of `backend/middleware/validateInput.js` ·
-`frontend/src/context/AuthContext.jsx` · `components/ProtectedRoute.jsx` ·
-`pages/Register.jsx` · `pages/Login.jsx` · `pages/Dashboard.jsx`
+Registration with bcrypt hashing, JWT login, a session that survives refresh,
+and a dashboard showing leads and reviews with stat tiles and clickable status
+badges.
 
-Working today: registration with bcrypt hashing, JWT login, session that
-survives refresh, a protected dashboard showing leads and reviews with stat
-tiles and clickable status badges.
-
-**Understand before you demo:**
+**Understand before you demo**
 - Why `login` returns the *same* message for a wrong email and a wrong password
   (so the form cannot be used to discover which accounts exist).
 - Why `passwordHash` is deleted in the model's `toJSON` rather than in each
   controller.
 - How `AuthContext` restores a session from `localStorage` on page load.
+- The status badge in `Dashboard.jsx` cycles new → contacted → closed on click.
 
-**Extend:** password strength hint · an "edit my listing" page · a
-`status: pending` approval flow · logout confirmation.
+**Extend:** an "edit my listing" page · password strength hint · a
+`status: pending` approval flow · a lead count badge in the navbar.
 
-**Done when:** you can register, sign out, sign back in, refresh, and still be
-logged in — and you can explain the three points above.
+**Done when:** you can register, sign out, sign back in, refresh, stay logged
+in — and explain the three points above.
 
 ---
 
-## Member B — UI shell and home page
+## Member B — Design system and home page
 
-**Branch:** `feat/ui-shell`
+**Branch:** `feat/ui-shell` · **Requirements 1, 2 and 7**
 
-**Your files:** `components/Navbar.jsx` · `components/Field.jsx` ·
-`components/Stars.jsx` · `pages/Home.jsx` · `pages/NotFound.jsx` · `src/index.css`
+You own how the entire app looks. `index.css` is the design system: fonts,
+colours, spacing and the `.btn-primary` / `.card` / `.tile` / `.input` classes
+every other member uses.
 
-Working today: sticky responsive navbar that collapses to a menu under 640px,
-a home page with a hero, the problem section (requirement 2), a how-it-works
-row and a call to action.
+**Understand before you demo**
+- Changing `--color-accent` in `index.css` restyles the whole app. That is the
+  point — nobody hardcodes colours in components.
+- `Field.jsx` is why every form shows validation errors identically: it takes an
+  `error` prop and renders the message plus the red border.
+- The navbar collapses to a hamburger under 768px.
+- The hero card uses **normal flow, not absolute positioning** — floating chips
+  over the card overlapped the doctor's name at some widths. Don't reintroduce that.
 
-**Requirement 7 (responsive) is graded entirely on your work.** Test at 375px
-from the start, not at the end.
+**Extend:** a dark section between stats and problem · hover states on cards ·
+loading skeletons · a real logo mark.
 
-**Understand before you demo:** `Field.jsx` is why every form shows validation
-errors identically — it takes an `error` prop and renders the message plus the
-red border. Every form in the app uses it.
-
-**Extend:** a colour palette in `index.css` · loading skeletons · a footer ·
-better empty-state illustrations · focus states for keyboard users.
-
-**Done when:** nothing overflows horizontally at 375px, the menu works on a
-phone, and the Home page clearly explains the problem to someone who has never
-heard of MediQ.
+**Done when:** nothing overflows horizontally at 375px (check
+`document.documentElement.scrollWidth === 375`), and Home explains the problem
+to someone who has never heard of MediQ.
 
 ---
 
 ## Member C — Directory and search
 
-**Branch:** `feat/directory`
+**Branch:** `feat/directory` · **Requirement 6 — the biggest scoring item**
 
-**Your files:** `backend/controllers/providerController.js` ·
-`pages/Directory.jsx` · `pages/Doctors.jsx` · `pages/Pharmacies.jsx` ·
-`components/SearchBar.jsx` · `components/ProviderCard.jsx`
+One `Directory` component powers both `/doctors` and `/pharmacies`. Debounced
+search, area and specialization filters populated from the database, result
+counts, and an empty state with a "clear filters" button.
 
-Working today: one `Directory` component powering both `/doctors` and
-`/pharmacies`, debounced search, area and specialization filters populated from
-the database, result counts, and a real empty state with a "clear filters" button.
-
-**You own requirement 6, the biggest scoring item** — search, filter *and*
-calculate.
-
-**Understand before you demo:**
+**Understand before you demo**
 - `withRatings()` computes every provider's average rating in **one** aggregate
-  query, not one query per provider. Be able to explain why that matters.
-- The average is calculated from the Review collection every time; it is never
-  stored on the provider. If you cache it, it goes stale.
-- Search is debounced by 250ms so typing does not fire a request per keystroke.
+  query, not one per provider. Be able to explain why that matters.
+- The average is recalculated from the Review collection on every request and is
+  never stored on the provider. Cache it and it goes stale.
+- Search is debounced 250ms so typing does not fire a request per keystroke.
+- User input is escaped before becoming a RegExp. Without that, typing `(` in
+  the search box returned a 500. There are regression tests for this.
 
-**Extend:** sort by rating or fee · district filter · pagination · "no results
-in this area, here are nearby ones".
+**Extend:** sort by rating or fee · a district filter · pagination · remember
+the last filter in the URL query string.
 
 **Done when:** every filter combination returns correct results, the empty state
 reads well, and you can explain the aggregate.
@@ -181,35 +191,30 @@ reads well, and you can explain the aggregate.
 
 ## Member D — Contact forms, reviews, deployment
 
-**Branch:** `feat/contact-reviews`
+**Branch:** `feat/contact-reviews` · **Requirements 4, 5 and 10**
 
-**Your files:** `backend/controllers/leadController.js` ·
-`backend/controllers/reviewController.js` · `backend/seed/seedData.js` ·
-`pages/ProviderDetail.jsx` · `components/LeadForm.jsx` ·
-`components/ReviewForm.jsx` · `README.md` · deployment
+The listing detail page with the lead form and review form, per-field validation
+messages, a success state, and reviews refreshing immediately after posting.
+You also own validation for the whole app, the seed data, and the test suite.
 
-**You own requirements 4, 5 and 10** — the forms and the live demo.
-
-Working today: a listing detail page with the lead form and review form side by
-side, per-field validation messages from the backend, a success state, and
-reviews refreshing immediately after one is posted.
-
-**Understand before you demo:**
+**Understand before you demo**
 - The backend returns `{ message, errors: { field: 'why' } }` and the forms
-  render `err.errors[fieldName]` under each input. That is requirement 5.
-- A pharmacy enquiry rejects a missing `medicineName`, but a doctor request does
-  not — the rule is in `leadController.js`, not the form.
+  render `err.errors[fieldName]` under each input. That *is* requirement 5.
+- A pharmacy enquiry rejects a missing `medicineName`; a doctor request does
+  not. The rule lives in `leadController.js`, not the form.
 - `getMyLeads` filters on `req.providerId` from the JWT, never a client-supplied
-  id. Ask yourself what would break if it did not.
+  id. Work out what would break if it did not.
+- You own `validateInput.js`, so Member A must ask you before changing the
+  registration rules.
 
-**Deployment:**
+**Deployment**
 - Backend to Render/Railway: set `MONGO_URI` and `JWT_SECRET`
 - Frontend to Vercel/Netlify: set `VITE_API_URL` to the deployed backend URL
-- Atlas Network Access must stay `0.0.0.0/0`
+- Atlas Network Access stays `0.0.0.0/0`
 - Render free tier cold-starts ~50s — hit the URL before recording
 - **Test the live link in incognito before submitting**
 
-Also: fill in the README team table and AI declaration, and review/merge PRs.
+Also: fill the README team table and AI declaration, and review/merge PRs.
 
 **Done when:** a request sent on the deployed site appears in that provider's
 dashboard, in incognito, and the README has no `TODO` left.

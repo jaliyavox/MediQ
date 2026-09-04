@@ -16,9 +16,7 @@ export default function Login() {
 
   const submit = async (e) => {
     e.preventDefault();
-    setErrors({});
-    setBanner('');
-    setSending(true);
+    setErrors({}); setBanner(''); setSending(true);
     try {
       signIn(await login(form));
       navigate('/dashboard');
@@ -31,27 +29,31 @@ export default function Login() {
   };
 
   return (
-    <section className="mx-auto max-w-sm">
-      <h1 className="text-2xl font-bold text-slate-900">Sign in</h1>
-      <p className="mt-1 mb-5 text-slate-600">For doctors and pharmacies listed on MediQ.</p>
+    <section className="mx-auto max-w-md px-5 py-20 sm:px-8">
+      <h1 className="text-center text-5xl">Sign in</h1>
+      <p className="mt-3 text-center text-body">
+        For doctors and pharmacies listed on MediQ.
+      </p>
 
-      <form onSubmit={submit} noValidate className="space-y-3 rounded-xl border border-slate-200 bg-white p-5">
-        {banner && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{banner}</p>}
+      <form onSubmit={submit} noValidate className="card mt-10 space-y-4 p-7">
+        {banner && (
+          <p className="rounded-xl bg-danger-soft px-4 py-3 text-sm text-danger">{banner}</p>
+        )}
 
-        <Field label="Email" name="email" type="email" value={form.email}
-               onChange={set} error={errors.email} />
-        <Field label="Password" name="password" type="password" value={form.password}
-               onChange={set} error={errors.password} />
+        <Field label="Email" name="email" type="email" autoComplete="email"
+               value={form.email} onChange={set} error={errors.email} />
+        <Field label="Password" name="password" type="password" autoComplete="current-password"
+               value={form.password} onChange={set} error={errors.password} />
 
-        <button type="submit" disabled={sending}
-                className="w-full rounded-lg bg-teal-700 px-4 py-2 font-medium text-white hover:bg-teal-800 disabled:opacity-60">
-          {sending ? 'Signing in...' : 'Sign in'}
+        <button type="submit" disabled={sending} className="btn-primary w-full">
+          {sending ? 'Signing in…' : 'Sign in'}
         </button>
-
-        <p className="text-center text-sm text-slate-600">
-          Not listed yet? <Link to="/register" className="text-teal-700 underline">Create an account</Link>
-        </p>
       </form>
+
+      <p className="mt-6 text-center text-sm text-body">
+        Not listed yet?{' '}
+        <Link to="/register" className="text-ink underline underline-offset-4">Create an account</Link>
+      </p>
     </section>
   );
 }

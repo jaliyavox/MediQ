@@ -138,45 +138,26 @@ component: read it, extend it, test it, and be able to talk through it.
 
 ## 9. Team Components
 
-Each member owns a disjoint set of files and works on their own branch.
+Full per-member checklists are in `MEMBER-TASKS.md`. Summary:
 
-### Member A — Accounts and dashboard · `feat/accounts`
-`backend/controllers/authController.js` · `backend/middleware/auth.js` ·
-the auth half of `validateInput.js` · `frontend/src/context/AuthContext.jsx` ·
-`components/ProtectedRoute.jsx` · `pages/Register.jsx` · `pages/Login.jsx` ·
-`pages/Dashboard.jsx`
+| Member | Theme | Branch | Owns requirement |
+|---|---|---|---|
+| A | Accounts — auth, session, dashboard | `feat/accounts` | 8 |
+| B | Design system — tokens, navbar, home | `feat/ui-shell` | 1, 2, 7 |
+| C | Directory — search, filters, rating aggregate | `feat/directory` | 6 |
+| D | Forms, reviews, seed, tests, deployment | `feat/contact-reviews` | 4, 5, 10 |
 
-Extensions worth doing: password strength meter, edit-your-listing page,
-lead counters, "forgot password" stub.
-
-### Member B — UI shell and home · `feat/ui-shell`
-`components/Navbar.jsx` · `components/Field.jsx` · `components/Stars.jsx` ·
-`pages/Home.jsx` · `pages/NotFound.jsx` · `src/index.css`
-
-You own how the whole app looks — **requirement 7 is graded on your work**.
-Test at 375px width from the start.
-
-### Member C — Directory and search · `feat/directory`
-`backend/controllers/providerController.js` · `pages/Directory.jsx` ·
-`pages/Doctors.jsx` · `pages/Pharmacies.jsx` · `components/SearchBar.jsx` ·
-`components/ProviderCard.jsx`
-
-You own **requirement 6**, the biggest single scoring item: search, filtering
-and the average-rating calculation. Extensions: sort by rating or fee,
-district filter, result count, pagination.
-
-### Member D — Contact, reviews, deployment · `feat/contact-reviews`
-`backend/controllers/leadController.js` · `backend/controllers/reviewController.js` ·
-`backend/seed/seedData.js` · `pages/ProviderDetail.jsx` ·
-`components/LeadForm.jsx` · `components/ReviewForm.jsx` · `README.md` · deployment
-
-You own **requirements 4, 5 and 10** — the forms and the live demo — plus
-Atlas, deployment and merging pull requests.
-
-### Locked files — tell the team before editing
-`backend/server.js` · `backend/app.js` · `backend/models/*` ·
-`frontend/src/App.jsx` · `frontend/src/api/*` · `frontend/vite.config.js` ·
+**Locked files — tell the team before editing:** `backend/server.js` ·
+`backend/app.js` · `backend/models/*` · `frontend/src/App.jsx` ·
+`frontend/src/api/*` · `frontend/vite.config.js` · `index.html` ·
 both `package.json`
+
+### Design system
+
+`frontend/src/index.css` holds every colour, font and shared class
+(`.btn-primary`, `.card`, `.tile`, `.input`, `.eyebrow`). Components never
+hardcode colours — changing a token there restyles the whole app. Type is
+Instrument Serif for display, Inter for body.
 
 ## 10. Setup
 
